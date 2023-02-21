@@ -1,7 +1,7 @@
 <?php 
 
 ob_start();
-session_start(); 
+require __DIR__ . '/../db.php';
 
 if(!isset($_SESSION['admin'])) {
     header('Location: /admin/login');
@@ -14,14 +14,14 @@ if(!isset($_SESSION['admin'])) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title> Yem Yem | Dashboard</title>
-    <link href="/views/admin/assets/vendor/fontawesome/css/fontawesome.min.css" rel="stylesheet">
-    <link href="/views/admin/assets/vendor/fontawesome/css/solid.min.css" rel="stylesheet">
-    <link href="/views/admin/assets/vendor/fontawesome/css/brands.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" >
-    <link href="/views/admin/assets/css/master.css" rel="stylesheet">
-    <link href="/views/admin/assets/vendor/datatables/datatables.min.css" rel="stylesheet">
-    <link href="/views/admin/assets/vendor/flagiconcss/css/flag-icon.min.css" rel="stylesheet">
+    <title><?= $config['title'] ?> | Dashboard</title>
+    <link href="/a/vendor/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+    <link href="/a/vendor/fontawesome/css/solid.min.css" rel="stylesheet">
+    <link href="/a/vendor/fontawesome/css/brands.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link href="/a/css/master.css" rel="stylesheet">
+    <link href="/a/vendor/datatables/datatables.min.css" rel="stylesheet">
+    <link href="/a/vendor/flagiconcss/css/flag-icon.min.css" rel="stylesheet">
 </head>
 
 <body>
@@ -60,7 +60,7 @@ if(!isset($_SESSION['admin'])) {
                         <li class="nav-item dropdown">
                             <div class="nav-dropdown">
                                 <a href="#" id="nav2" class="nav-item nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user"></i> <span><?= $_SESSION['admin'] ?></span> <i style="font-size: .8em;" class="fas fa-caret-down"></i>
+                                    <i class="fas fa-user"></i> <span><?= $_SESSION['admin'] ?></span> <i class="fas font-10 fa-caret-down"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end nav-link-menu">
                                     <ul class="nav-list">

@@ -23,12 +23,14 @@ if($statement->rowCount() > 0) {
     			<?php foreach($items as $item): ?>
                     <div class="col-md-4">
                         <div class="product-item">
+						<a href="/item?id=<?= $item['id'] ?>">
                             <div class="product-thumb">
-                                <img class="img-responsive" src="<?= htmlspecialchars(unserialize($item['images'])[0]) ?>" alt="<?= htmlspecialchars($item['title']) ?>" />
+                                <img class="img-fluid w-33" src="<?= (!empty(unserialize($item['images'])[0]))?unserialize($item['images'])[0]:'/images/noimg.jpg'; ?>" alt="product-img" />
                             </div>
+						</a>
                             <div class="product-content">
-                                <h4><a href="/item?id=<?= htmlspecialchars($item['id']) ?>"><?= htmlspecialchars($item['title']) ?></a></h4>
-                                <p class="price">₦ <?= number_format($item['price'], 2) ?></p>
+                                <h4><a href="/item?id=<?= $item['id'] ?>"><?= $item['title'] ?></a></h4>
+                                <p class="price">CAD$ <?= number_format($item['price'], 2) ?></p>
                             </div>
                         </div>
                     </div>
@@ -42,7 +44,7 @@ if($statement->rowCount() > 0) {
 
 <!--
 Start Call To Action
-==================================== -->
+====================================
 <section class="call-to-action bg-gray section">
 	<div class="container">
 		<div class="row">
@@ -57,12 +59,12 @@ Start Call To Action
 				      <span class="input-group-btn">
 				        <button class="btn btn-main" type="button">Subscribe Now!</button>
 				      </span>
-				    </div><!-- /input-group -->
-			  </div><!-- /.col-lg-6 -->
+				    </div>
+			  </div>
 
 			</div>
-		</div> 		<!-- End row -->
-	</div>   	<!-- End container -->
-</section>   <!-- End section -->
-
+		</div>
+	</div>
+</section>
+ -->
 <?php require __DIR__ . '/footer.php'; ?>

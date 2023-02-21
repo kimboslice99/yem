@@ -1,6 +1,11 @@
-<?php 
+<?php
 ob_start();
-session_start(); 
+
+require __DIR__ . '/db.php';
+require __DIR__ . '/admin/util.php';
+
+header("Content-Security-Policy: default-src 'none';connect-src 'self';script-src-elem 'self' https://code.jquery.com/jquery-3.6.3.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js;style-src-elem 'self' https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.compat.css https://assets.braintreegateway.com/web/dropin/1.34.0/css/dropin.min.css https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css https://fonts.googleapis.com/;style-src 'self';font-src 'self' https://fonts.gstatic.com/;img-src 'self' data:; report-uri /csp/report;");
+$phone = $config['contact_phone'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -9,31 +14,34 @@ session_start();
   <!-- Basic Page Needs
   ================================================== -->
   <meta charset="utf-8">
-  <title>Yem Yem Supermarket</title>
+  <title><?= $config['title'] ?></title>
 
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="Yem-Yem Supermarket">
+  <meta name="description" content="<?= $config['description'] ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="author" content="Yem-Yem">
-  <meta name="generator" content="Yem-Yem Supermarket">
+  
+  <!-- Sharing needs -->
+  <meta property="og:title" content="<?= $config['title'] ?>">
+  <meta property="og:description" content="<?= $config['description'] ?>">
+  <meta property="og:image" content="<?= $config['meta_image'] ?>">
+  <meta property="og:url" content="<?= preg_replace('/^www\./i', '', $_SERVER['HTTP_HOST']) ?>">
   
   <!-- Favicon -->
-  <link rel="shortcut icon" type="image/x-icon" href="views/images/favicon.png" />
-  
-  <link rel="stylesheet" href="views/plugins/themefisher-font/style.css">
+  <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.png" />
+
+  <link rel="stylesheet" href="/plugins/themefisher-font/style.css">
   <!-- bootstrap.min css -->
-  <link rel="stylesheet" href="views/plugins/bootstrap/css/bootstrap.min.css">
-  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
   <!-- Animate css -->
-  <link rel="stylesheet" href="views/plugins/animate/animate.css">
-  <!-- Slick Carousel -->
-  <link rel="stylesheet" href="views/plugins/slick/slick.css">
-  <link rel="stylesheet" href="views/plugins/slick/slick-theme.css">
-  
+  <!--<link rel="stylesheet" href="/plugins/animate/animate.css">-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.compat.css">
+  <!-- Slick Carousel
+  <link rel="stylesheet" href="/plugins/slick/slick.css">
+  <link rel="stylesheet" href="/plugins/slick/slick-theme.css"> -->
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="views/css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 
 </head>
 
@@ -44,39 +52,31 @@ session_start();
         <div class="container">
             <div class="row">
                 <div class="col-md-4 col-xs-12 col-sm-4">
+				<?php if(!empty($phone)): ?>
                     <div class="contact-number">
                         <i class="tf-ion-ios-telephone"></i>
-                        <span>+234-80-1234-5678</span>
+                        <span><?= $phone ?></span>
                     </div>
+				<?php endif ?>
                 </div>
                 <div class="col-md-4 col-xs-12 col-sm-4">
                     <!-- Site Logo -->
                     <div class="logo text-center">
                         <a href="/">
-                            <svg width="250px" height="29px" viewBox="0 0 155 29" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                                xmlns:xlink="http://www.w3.org/1999/xlink">
-                                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" font-size="40"
-                                    font-family="AustinBold, Austin" font-weight="bold">
-                                    <g id="Group" transform="translate(-108.000000, -297.000000)" fill="#000000">
-                                        <text id="AVIATO">
-                                            <tspan x="108.94" y="325">YEM-YEM</tspan>
-                                        </text>
-                                    </g>
-                                </g>
-                            </svg>
+							<img class="logo-h" src="/images/logo.jpg" alt="Logo">
                         </a>
                     </div>
                 </div>
                 <div class="col-md-4 col-xs-12 col-sm-4">
                     <!-- Cart -->
                     <ul class="top-menu text-right list-inline">
-                        <li class="dropdown cart-nav dropdown-slide">
-                            <a href="#!" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown"><i
+                        <li class="dropdown cart-nav cartdrop dropdown-slide">
+                            <a href="#!" class="nav-link dropdown-toggler" data-bs-toggle="dropdown" data-bs-hover="dropdown"><i
                                     class="tf-ion-android-cart"></i>Cart</a>
-                            <div class="dropdown-menu cart-dropdown">
+                            <div class="dropdown-menu p-2 dropdown-menu-end">
                                 
                                 <?php if(!isset($_SESSION['cart']) || count($_SESSION['cart']) == 0): ?>
-                                    <div class="media">
+                                    <div class="dropdown-item">
                                         <div class="media-body">
                                             <h4 class="media-heading text-center">Cart is empty</h4>
                                         </div>
@@ -84,32 +84,44 @@ session_start();
 
                                     <div class="cart-summary">
                                         <span>Total</span>
-                                        <span class="total-price">₦ 0.00</span>
+                                        <span class="total-price">$ 0.00</span>
                                     </div>
-                                    <ul class="text-center cart-buttons">
+                                    <ul class="text-center">
                                         <li><a href="/cart" class="btn btn-small">View Cart</a></li>
                                     </ul>
     
                                 <?php else: ?>
+								<table class="font-10 text-center">
+									<tr>
+									<!--<th>img</th>-->
+									<th>title</th>
+									<th>price</th>
+									<th>qty</th>
+									<th>total</th>
+									<th>delete</th>
+									</tr>
                                     <?php foreach($_SESSION['cart'] as $item): ?>
-                                        <div class="media">
+									<tr>
+                                        <div class="dropdown-item">
                                             <a class="pull-left" href="#!">
-                                                <img class="media-object" src="<?= htmlspecialchars($item['image']) ?>" alt="image" />
+                                                <!--<td><img class="media-object" src="\<\?= $item['image'] ?>" alt="image" /></td>-->
                                             </a>
                                             <div class="media-body">
-                                                <h4 class="media-heading"><a href=""><?= htmlspecialchars($item['title']) ?></a></h4>
+                                                <td class="p-1"><p class="font-10"><a href=""><?= $item['title'] ?></a></p></td>
                                                 <div class="cart-price">
-                                                    <span><?= htmlspecialchars($item['quantity']) ?> x</span>
-                                                    <span><?= number_format($item['price'], 2) ?></span>
+                                                    <td class="p-1"><?= number_format($item['price'], 2) ?></td>
+                                                    <td class="p-1"><?= $item['quantity'] ?></td>
                                                 </div>
-                                                <h5><strong>₦ <?= number_format($item['quantity'] * $item['price'], 2) ?></strong></h5>
+                                                <td class="p-1"><?= number_format($item['quantity'] * $item['price'], 2) ?></td>
                                             </div>
-                                            <a href="/cart-remove-item?id=<?= htmlspecialchars($item['id']) ?>"><i class="tf-ion-close"></i></a>
+                                            <td class="p-0"><a href="/cart-remove-item?id=<?= $item['id'] ?>"><i class="tf-ion-close"></i></a></td>
                                         </div>
+									</tr>
                                     <?php endforeach; ?>
+								</table>
                                     <div class="cart-summary">
                                         <span>Total</span>
-                                        <span class="total-price">₦<?php 
+                                        <span class="total-price">$<?php 
                                                 $total = 0;
                                                 foreach($_SESSION['cart'] as $item) {
                                                     $total += $item['price'] * $item['quantity'];
@@ -118,7 +130,7 @@ session_start();
                                             ?>
                                         </span>
                                     </div>
-                                    <ul class="text-center cart-buttons">
+                                    <ul class="text-center">
                                         <li><a href="/cart" class="btn btn-small" data-link>View Cart</a></li>
                                     </ul>
                                 <?php endif ?>
@@ -135,58 +147,53 @@ session_start();
 
     <!-- Main Menu Section -->
     <section class="menu">
-        <nav class="navbar navigation">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
-                        aria-expanded="false" aria-controls="navbar">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
+		<nav class="navbar navbar-expand-lg navbar-light">
+		  <div>
+
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+					<span class="navbar-toggler-icon"></span>
+				  </button>
 
                 </div><!-- / .navbar-header -->
 
-                <!-- Navbar Links -->
-                <div id="navbar" class="navbar-collapse collapse text-center">
-                    <ul class="nav navbar-nav">
+                <!-- Navbar Links d-flex justify-content-center -->
+                <div class="collapse navbar-collapse text-center justify-content-center bg-light" id="navbarSupportedContent">
+                    <ul class="navbar-nav d-flex">
 
                         <!-- Home -->
-                        <li class="dropdown ">
+                        <li class="dropdown p-3">
                             <a href="/" data-link>Home</a>
                         </li><!-- / Home -->
 
 
                         <!-- Shop -->
-                        <li class="dropdown ">
+                        <li class="dropdown p-3">
                             <a href="/products" data-link>Shop</a>
                         </li><!-- / Shop -->
 
-                        <li class="dropdown ">
+                        <li class="dropdown p-3">
                             <a href="/about" data-link>About</a>
                         </li><!-- / About -->
-
                         <?php if(isset($_SESSION['name'])): ?>
-                            <li class="dropdown dropdown-slide">
-                                <a href="#!" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="350"
-                                    role="button" aria-haspopup="true" aria-expanded="false"><?php echo htmlspecialchars($_SESSION['name']); ?><span
-                                        class="tf-ion-ios-arrow-down"></span></a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="/profile">Profile</a></li>
-                                    <li><a href="/logout">Logout</a></li>
+						<div class="btn-group">
+                            <li class="nav-item dropdown p-3 prof dropdown-slide">
+                                <a class="dropdown-toggler" data-bs-display="static" href="#" role="button" data-bs-hover="dropdown" aria-expanded="false"><?= $_SESSION['name']; ?></a>
+                                <ul class="dropdown-menu dropdown-menu-lg-end">
+                                    <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
                                 </ul>
                             </li>
+						</div>
                         <?php else: ?>
-                            <li class="dropdown dropdown-slide">
-                                <a href="#!" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="350"
-                                    role="button" aria-haspopup="true" aria-expanded="false">Account <span
-                                        class="tf-ion-ios-arrow-down"></span></a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="/login">Login</a></li>
-                                    <li><a href="/register">Register</a></li>
+						<div class="btn-group">
+                            <li class="nav-item dropdown p-3 prof dropdown-slide">
+                                <a class="dropdown-toggler" data-bs-display="static" href="#" role="button" data-bs-hover="dropdown" aria-expanded="false">Account</a>
+                                <ul class="dropdown-menu dropdown-menu-lg-end">
+                                    <li><a class="dropdown-item" href="/login">Login</a></li>
+                                    <li><a class="dropdown-item" href="/register">Register</a></li>
                                 </ul>
                             </li>
+						</div>
                         <?php endif ?>
 
                     </ul><!-- / .nav .navbar-nav -->

@@ -1,36 +1,51 @@
 <?php
+// Import PHPMailer namespace
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+// Require PHPMailer
+require_once __DIR__.'/../bin/PHPMailer/Exception.php';
+require_once __DIR__.'/../bin/PHPMailer/PHPMailer.php';
+require_once __DIR__.'/../bin/PHPMailer/SMTP.php';
 
-require __DIR__ . '/../sendgrid-php/sendgrid-php.php';
+function sendEmail($emails, $title, $message, $html, $attachment, $image) {
+	require __DIR__ . '/../db.php';
+	$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+	(empty($config['smtp_username']) || empty($config['smtp_password']))?$auth=false:$auth=true;
+		foreach($emails as $email) {
+			//Create an instance; passing `true` enables exceptions
+			$mail = new PHPMailer(true);
+			try {
+				
+				//Server settings
+				// $mail->SMTPDebug = SMTP::DEBUG_SERVER; 
+				$mail->isSMTP();
+				$mail->Host       = $config['smtp_host'];
+				$mail->SMTPAuth   = $auth;
+				$mail->Username   = $config['smtp_username'];
+				$mail->Password   = $config['smtp_password'];
+				$mail->Port       = $config['smtp_port'];
 
-$key = '';
+				$mail->setFrom($config['mail_from_address'], $config['mail_from_name']);
+				$mail->addAddress($email);
+				/* Remember to swap addAttachment function variables $encoding and $type in PHPMailer if upgrading */
+				($attachment != null)?$mail->addAttachment($attachment['name'], $attachment['tmp_name'], mime_content_type($attachment['tmp_name'])):''; // Add attachments
+				($image != null)?$mail->addEmbeddedImage($image['path'], $image['name']):'';// Add image
+				
+				$mail->isHTML($html);
+				$mail->Subject = $title;
+				$mail->Body    = $message;
+				$mail->XMailer = ' '; // Try to hide what language this site is built on
 
-function sendEmail($emails, $title, $message, $key) {
-  /*  $attachment = new SendGrid\Attachment();
-    $file_encoded;
-    $filename = array_filter($_FILES['file']['name']);
-    if(!empty($filename)) {
-        $attachment->setType("application/text");
-        $attachment->setFilename($filename);
-        $file_encoded = base64_encode(file_get_contents($_FILES['file']['tmp_name']));
-        $attachment->setContent($file_encoded);
-        $attachment->setDisposition("attachment");
-    }*/
-    foreach($emails as $email) {
-        $mail = new \SendGrid\Mail\Mail();
-        $mail->setFrom("donotreply@YOUR_SENDGRID_DOMAIN", "COMPANY NAME");
-        $mail->setSubject($title);
-      //  $mail->addAttachment($attachment);
-        $mail->addTo($email, $email);
-        $mail->addContent("text/plain", $message);
-        $sendgrid = new \SendGrid($key);
-        try {
-          $sendgrid->send($mail);
-        } catch (Exception $e) {
-          
-        }
-    }
+				$mail->send();
+				return true;
+			} catch (Exception $e) {
+				 //"Message could not be sent. Error: {$mail->ErrorInfo}";
+				return false;
+			}
+		}
 }
-
+// unsure why original dev went from pdo to mysqli?
 function exportDB($host, $name, $user, $password) {
     $db = new mysqli($host, $user, $password, $name);
     $tables = array();
@@ -86,89 +101,154 @@ function exportDB($host, $name, $user, $password) {
     header('Content-Type: application/sql');
     ob_clean();
     flush();
-    readfile($filename);
+    die(readfile($filename));
 }
 
 function importDB($pdo) {
-    $sql = file_get_contents($_FILES['file']['tmp_name']);
-    $pdo->query($sql);
+	if(!clamdscan($_FILES['file']['tmp_name'])){
+		$sql = file_get_contents($_FILES['file']['tmp_name']);
+		$pdo->query($sql);
+	}
 }
-
+// debugging this function? some things to check
+// - writeable upload_tmp_dir
+// On IIS, ensure IIS_IUSRS has write access
+// on apache, ensure www-data has write access (or whatever your webserver user is)
+// - file_uploads=On in php.ini
+// - upload_max_filesize set high enough
 function uploadImages() {
 
     // File upload configuration 
     $targetDir = "uploads/"; 
-    $allowTypes = array('jpg','png','jpeg','gif');
+    $allowTypes = array('jpg','png','jpeg','gif', 'webp');
     $paths = array();
      
 
-    $fileNames = array_filter($_FILES['files']['name']); 
+    $fileNames = array_filter($_FILES['files']['name']);
+	
     if(!empty($fileNames)){ 
-        foreach($_FILES['files']['name'] as $key=>$val){ 
+        foreach($_FILES['files']['name'] as $key=>$val){
             // File upload path
             $file = explode(".", $_FILES["files"]["name"][$key]);
+
             $fileName = md5(microtime(true)) . '.' . end($file);
             $targetFilePath = $targetDir . $fileName; 
-            
 
             // Check whether file type is valid 
-            $fileType = pathinfo($targetFilePath, PATHINFO_EXTENSION);
-            // Check whether file type is valid 
-            if(in_array($fileType, $allowTypes, true) && verifyMagicByte($_FILES["files"]["tmp_name"][$key])) {
-                $imageTemp = $_FILES["files"]["tmp_name"][$key];
-                $imageUploadPath = $targetDir . $fileName;
-                $paths[] = compressImage($imageTemp, $imageUploadPath, 50);
-            } 
-        } 
-         
+            $fileType = strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION));
+            if(in_array($fileType, $allowTypes) && verifyMagicByte($_FILES["files"]["tmp_name"][$key])) {
+				if(!clamdscan($_FILES['files']['tmp_name'][$key])){
+					$imageTemp = $_FILES["files"]["tmp_name"][$key];
+					$imageUploadPath = $targetDir . $fileName;
+					$paths[] = compressImage($imageTemp, $imageUploadPath, 50, 500, 500, 'white');
+				}
+            }
+        }
+
     }
     return $paths;
 }
 
 
 function verifyMagicByte($file) {
-    // PNG, GIF, JFIF JPEG, EXIF JPEF respectively
-    $allowed = array('89504E47', '47494638', 'FFD8FFE0', 'FFD8FFE1');
+    // PNG, GIF, JFIF JPEG, EXIF JPEF, WEBP respectively
+    $allowed = array('89504E47', '47494638', 'FFD8FFE0', 'FFD8FFE1', '52494646');
     $handle = fopen($file, 'r');
     $bytes = strtoupper(bin2hex(fread($handle, 4)));
     fclose($handle);
     return in_array($bytes, $allowed);
 }
 
-function removeExif($image) {
-    $img = new Imagick($image);
-    $profiles = $img->getImageProfiles("icc", true);
 
+function compressImage($source, $destination, $quality, $height, $width, $bgcolor) { 
+	// Remove Exif
+	$img = new Imagick(realpath($source));
+	$profiles = $img->getImageProfiles("icc", true);
     $img->stripImage();
+	// Add color profile back, if exists
+    if(!empty($profiles)) {
+       $img->profileImage("icc", $profiles['icc']);
+    }
+	//$img->setFormat('jpeg'); // Convert to jpeg? hmm
+	// Set quality
+	$img->setImageCompressionQuality($quality);
+	
+	// Credits go to Finglish on StackOverflow for this!
+    $img->trimImage(20000);
 
-    if(!empty($profiles))
-        $img->profileImage("icc", $profiles['icc']);
-}
+    $img->resizeImage($width, $height,Imagick::FILTER_LANCZOS,1, TRUE);
+	if($bgcolor == 'transparent'){
+		$img->setImageBackgroundColor(new \ImagickPixel('transparent'));
+	}else{
+		$img->setImageBackgroundColor($bgcolor);
+	}
 
+    $w = $img->getImageWidth();
+    $h = $img->getImageHeight();
 
-function compressImage($source, $destination, $quality) { 
-    // Get image info 
-    $imgInfo = getimagesize($source); 
-    $mime = $imgInfo['mime']; 
-     
-    // Create a new image from file 
-    switch($mime){ 
-        case 'image/jpeg': 
-            $image = imagecreatefromjpeg($source); 
-            break; 
-        case 'image/png': 
-            $image = imagecreatefrompng($source); 
-            break; 
-        case 'image/gif': 
-            $image = imagecreatefromgif($source); 
-            break; 
-        default: 
-            $image = imagecreatefromjpeg($source); 
-    } 
-     
-    // Save image 
-    imagejpeg($image, $destination, $quality); 
-     
+    $off_top=0;
+    $off_left=0;
+
+    if($w > $h){
+        $off_top = intval((($height-$h)/2) * -1); // Added intval() to supress "Deprecated: Implicit conversion from float -xx.x to int loses precision" Warning
+    }else{
+        $off_left = intval((($width-$w)/2) * -1);
+    }
+
+    $img->extentImage($width,$height, $off_left, $off_top);
+
+	$img->writeImage($destination);
+	$img->clear();
+	$img->destroy();
+
     // Return compressed image 
     return $destination; 
+}
+// this needs work
+function cartcheck($item, $qty) {
+	require __DIR__ . '/../db.php';
+    $statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
+	$statement->execute(array($item));
+	if($statement->rowCount() > 0) {
+		$stock = $statement->fetchAll(PDO::FETCH_ASSOC);
+	} else {
+		return -1; // Product Error
+	}
+	if($stock[0]['qty'] - $qty >= 0) {
+		return $stock[0]['qty'] - $qty;
+	} else {
+		return -1;
+	}
+}
+// Simple tax function
+function tax($num, $rate) {
+	$tax = 0;
+	$tax += bcdiv(bcmul($num, $rate, 2), 100, 2);
+	return $tax;
+}
+
+// Homegrown ini config function, retains comments, unlike some solutions
+function config($key, $value){
+	$path = __DIR__.'/../bin/config.ini';
+	$f = file($path);
+	$h = fopen($path, 'w');
+	foreach($f as $line){
+		if(preg_match('/^'.$key.'=.+/i', $line)){
+			$line = preg_replace('/^'.$key.'=.+/i', $key.'="'.$value.'"', $line);
+		}
+		fwrite($h, $line);
+	}
+	fclose($h);
+}
+// Function requires clamd service running and config details entered
+function clamdscan($filepath){
+	$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
+	// if path empty return as you would if clean
+	if(empty($config['clam_path'])){return false;}
+	exec('"'.$config['clam_path'].'" -c "'.$config['clam_config_path'].'" --fdpass --stream "'.$filepath.'"', $null, $var);
+	if($var === 0) {
+		return false;
+	}else{
+		return true;
+	}
 }

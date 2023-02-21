@@ -1,0 +1,64 @@
+[database]
+db_host=127.0.0.1
+db_port=3306
+db_name=ecom_test
+db_user=root
+db_password=password
+
+[braintree]
+bt_autoloader=""
+environment=""
+merchantid=""
+public_key=""
+private_key=""
+
+[session]
+session_name=Session
+# Session2Db isnt required, but a nice thing to have anyways
+session2db_autoloader=""
+
+[smtp]
+# mail from name
+mail_from_name="name"
+# mail from address
+mail_from_address="test@openwrt.lan"
+# Contact form email
+mail_to_address="test@openwrt.lan"
+smtp_host="127.0.0.1"
+smtp_port="25"
+smtp_username=""
+smtp_password=""
+
+[misc]
+# abuseipdb
+abuseipdb=""
+# ClamAV
+clam_path=""
+# Path to config file
+clam_config_path=""
+# taxes
+tax="5"
+# doc title
+title="title"
+# meta description
+description="description"
+# meta picture for socials
+meta_image=""
+# currency
+currency_symbol="$"
+
+[contact]
+# Physical address
+address="Mars"
+# The below can be left empty and we'll hide their icons if so
+contact_email="test@openwrt.lan"
+contact_phone=""
+contact_facebook=""
+contact_instagram=""
+contact_twitter=""
+
+[shipping]
+cp_username="1234"
+cp_password="1234"
+cp_mailedby="1234"
+cp_postal="1A2B3C"

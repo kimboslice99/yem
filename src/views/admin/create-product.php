@@ -4,12 +4,14 @@ require __DIR__ . '/header.php';
 require __DIR__ . '/../db.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
+require __DIR__ . '/../abuseipdb.php';
 
-if(isset($_POST['submit']) && CSRF::validateToken($_POST['token'])) {
+if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $title = filter_input(INPUT_POST, 'title');
     $description = filter_input(INPUT_POST, 'description');
     $price = filter_input(INPUT_POST, 'price');
     $category = filter_input(INPUT_POST, 'category');
+    $qty = filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT);
     $statement = $pdo->prepare("SELECT count(*) FROM categories WHERE title=?");
     $statement->execute(array($category));
     if(!$statement->fetchColumn() > 0) {
@@ -17,8 +19,8 @@ if(isset($_POST['submit']) && CSRF::validateToken($_POST['token'])) {
         $statement->execute(array($category));
     }
     $paths = serialize(uploadImages());
-    $statement = $pdo->prepare("INSERT INTO products(title, price, description, category, images) VALUES (?, ?, ?, ?, ?)");
-    $statement->execute(array($title, $price, $description, $category, $paths));
+    $statement = $pdo->prepare("INSERT INTO products(title, price, description, category, images, qty) VALUES (?, ?, ?, ?, ?, ?)");
+    $statement->execute(array($title, $price, $description, $category, $paths, $qty));
     header('Location: /admin/products');
 }
 
@@ -34,7 +36,7 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
             <div class="card-body">
                 <div class="col-md-6">
                     <form action="/admin/products/create" method="post" enctype="multipart/form-data">
-                        <?php CSRF::csrfInputField() ?>
+                        <?= CSRF::csrfInputField() ?>
                         <div class="mb-3">
                             <label class="form-label">Name</label>
                             <input type="text" name="title" class="form-control" required>
@@ -46,6 +48,10 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
                         <div class="mb-3">
                             <label class="form-label">Description</label>
                             <textarea class="form-control" name="description" style="resize:none" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Quantity</label>
+                            <input class="form-control" name="qty" type="number" required>
                         </div>
                         <div class="mb-3">
                             <label for="language" class="form-label">Category</label>
@@ -61,7 +67,7 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
                             		<?php endforeach; ?>
                             	  </ul>
                         	    </div>
-                            	<input id="category" type="text" name="category" class="form-control" aria-label="Text input with dropdown button" value="<?= $items[0]['category'] ?>">
+                            	<input id="category" type="text" name="category" class="form-control" aria-label="Text input with dropdown button" value="">
                         	</div>
                         </div>
                         <div class="mb-3">
@@ -85,3 +91,6 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
         $('#category').val($(this).text())
     })
 </script>
+<?php
+//var_dump($items[0]['category']);
+?>

@@ -1,6 +1,17 @@
+# No need for public access to views folder! check if this is working before deployment
+<Directory "/views">
+    Require all denied
+</Directory>
+
 RewriteEngine On
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
+RewriteCond %{REQUEST_FILENAME} !-f # REQUEST_FILENAME is not file
+RewriteCond %{REQUEST_FILENAME} !-d # REQUEST_FILENAME is not directory
+# rewrite path (.+) into query string ?uri=$1, with QSA flag to append query string
 RewriteRule ^(.+)$ index.php?uri=$1 [QSA,L]
+
+Header set X-Frame-Options DENY
+Header set X-Content-Type-Options nosniff
+Header set X-XSS-Protection 1; report=endpoint-1
+
+ErrorDocument 404 /error.php?e=404&m=File%20Not%20Found

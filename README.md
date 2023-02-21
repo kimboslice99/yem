@@ -11,33 +11,32 @@ E-commerce web application built using php routing. Instead of relying on the we
 - Order history
 - CSRF protection
 - Input sanitisation
-- Sends invoice to user's email using ([sendgrid](https://sendgrid.com))
+- Sends invoice to user's email using ([PHPMailer](https://github.com/PHPMailer/PHPMailer))
 - Livechat ([intercom](https://intercom.com))
     #### Admin Panel
 - Create, modify and delete products, customers and faq
 - Unlimited product pictures
-- Image compression ([php_gd](https://php.net/manual/en/book.image.php)): 50%
+- Image compression ([php_imagick](https://www.php.net/manual/en/book.imagick.php))
 - Image magic bytes verification
+- Upload scanning via ClamAV (if enabled) ([ClamAV](https://www.clamav.net/))
 - Create or select product category
 - Export/Import database
 - Last 7 days sales and revenue stats using Chartjs
 - Modify contact details and privacy policy
-- Send email to users ([sendgrid](https://sendgrid.com))
+- Send email to users ([PHPMailer](https://github.com/PHPMailer/PHPMailer))
 
 ## Setup
 - Create database
-- Execute [db-settings.sql](src/db-settings.sql)
-- Enter database config [db.php](src/views/db.php)
-- Enter sendgrid API key https://github.com/Tomiwa-Ot/e-commerce/blob/acb88e8d885feb9ed462242da9d4361c19755041/src/views/admin/util.php#L5
-- Enter intercom app id https://github.com/Tomiwa-Ot/e-commerce/blob/acb88e8d885feb9ed462242da9d4361c19755041/src/views/footer.php#L86 https://github.com/Tomiwa-Ot/e-commerce/blob/acb88e8d885feb9ed462242da9d4361c19755041/src/views/footer.php#L101
-- Enter your sendrid domain https://github.com/Tomiwa-Ot/e-commerce/blob/237b20b500e685424939499d3dabc8aaa49c8ee5/src/views/admin/util.php#L20 https://github.com/Tomiwa-Ot/e-commerce/blob/d869b3605ccbd46c39c6abf0aad6a2746dd0a275/src/views/cart.php#L20
-- Enable the php_gd/gd extension in php.ini
+- Execute [db.sql](src/db.sql)
+- Ensure webserver has full access to folder (IIS_IUSRS)
+- Enter database config [config.ini](src/views/bin/config.ini)
+- enable php extensions (imagick, curl, pdo_mysql, mysqli, openssl)
 
 ## Admin Credentials
 ```
 uri: /admin/login
 username: admin
-password: 123456
+password: 12345
 ```
 
 ## Screenshots

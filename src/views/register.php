@@ -1,16 +1,26 @@
 <?php 
 
-session_start();
 require __DIR__ . '/../csrf.php';
 require __DIR__ . '/db.php';
+require __DIR__ . '/admin/util.php';
+require __DIR__ . '/abuseipdb.php';
+
 
 if(isset($_SESSION['name'])) {
     header('Location: /');
 }
 
 $error = false;
-
-if(isset($_POST['register']) && CSRF::validateToken($_POST['token'])) {
+$state[0] = $state[1] = $state[2] = $state[3] = $state[4] = $state[5] = $phone = $lastname = $firstname = $email = $address = '';
+$errormsg = array();
+if(isset($_POST['register']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
+  if(AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) { $error = true && array_push($errormsg, 'code: 69') ; }
+	if(strlen($_POST['firstname']) < 2) { $error = true && array_push($errormsg, 'First name must be at least two characters') && $state[0] = 'is-invalid' ; }
+	if(strlen($_POST['lastname']) < 2) { $error = true && array_push($errormsg, 'Last name must be at least two characters') && $state[1] = 'is-invalid' ; }
+	if(strlen($_POST['email']) < 4) { $error = true && array_push($errormsg, 'Email must be at least five characters') && $state[2] = 'is-invalid' ; }  // Check input, set error=true if under specific string length
+	if(strlen(preg_replace('/[^0-9]/', '', $_POST['phone'])) < 10) { $error = true && array_push($errormsg, 'Phone must be at least 10 digits') && $state[3] = 'is-invalid' ; } // Also, error messages 
+	if(strlen($_POST['address']) < 15) { $error = true && array_push($errormsg, 'Address must be at least 15 Characters') && $state[4] = 'is-invalid' ; }
+	if(strlen($_POST['password']) < 8) { $error = true && array_push($errormsg, 'Password must be at least 8 characters') && $state[5] = 'is-invalid' ; }
   $lastname = filter_input(INPUT_POST, 'lastname');
   $firstname = filter_input(INPUT_POST, 'firstname');
   $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
@@ -18,24 +28,31 @@ if(isset($_POST['register']) && CSRF::validateToken($_POST['token'])) {
   $address = filter_input(INPUT_POST, 'address');
   $password = password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT);
   $createdTime = time();
-
   $statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
   $statement->execute(array($email));
-  if($statement->rowCount() > 0) {
-      $error = true;
-  } else {
-    $statement = $pdo->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $statement->execute(array($firstname, $lastname, $email, $phone, $address, $password, $createdTime));
-    session_start();
-    $_SESSION['name'] = $lastname . ' ' . $firstname;
-    $_SESSION['email'] = $email;
-    $_SESSION['phone'] = $phone;
-    $_SESSION['address'] = $address;
-    $_SESSION['created-time'] = $createdTime;
-    header('Location: /');
-  }
+  if($statement->rowCount() > 0) {$error=true && array_push($errormsg, 'E-Mail in use!<br>') && $state[2]='is-invalid';}// email exists in database/user already signed up
+  if($error === false) {
+		$statement = $pdo->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
+		$statement->execute(array($firstname, $lastname, $email, $phone, $address, $password, $createdTime));
 
+		sendEmail(array($email), "Welcome!", "Thanks for registering!", false, null, null);
+		session_start();
+		$_SESSION['name'] = $lastname . ' ' . $firstname;
+		$_SESSION['email'] = $email;
+		$_SESSION['phone'] = $phone;
+		$_SESSION['address'] = $address;
+		$_SESSION['created-time'] = $createdTime;
+		header('Location: /');
+  }
 }
+
+$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
+$statement->execute(array('appid'));
+$appid = $statement->fetchAll();
+
+$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
+$statement->execute(array('description'));
+$description = $statement->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -45,84 +62,106 @@ if(isset($_POST['register']) && CSRF::validateToken($_POST['token'])) {
   <!-- Basic Page Needs
   ================================================== -->
   <meta charset="utf-8">
-  <title>Yem Yem Supermarket</title>
+  <title><?= $appid[0]['value'] ?></title>
 
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="Yem-Yem Supermarket">
+  <meta name="description" content="<?= $description[0]['value'] ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="author" content="Yem-Yem">
-  <meta name="generator" content="Yem-Yem Supermarket">
   
   <!-- Favicon -->
-  <link rel="shortcut icon" type="image/x-icon" href="views/images/favicon.png" />
+  <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.png" />
   
-  <link rel="stylesheet" href="views/plugins/themefisher-font/style.css">
+  <link rel="stylesheet" href="/plugins/themefisher-font/style.css">
   <!-- bootstrap.min css -->
-  <link rel="stylesheet" href="views/plugins/bootstrap/css/bootstrap.min.css">
-  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
   <!-- Animate css -->
-  <link rel="stylesheet" href="views/plugins/animate/animate.css">
+  <link rel="stylesheet" href="/plugins/animate/animate.css">
   <!-- Slick Carousel -->
-  <link rel="stylesheet" href="views/plugins/slick/slick.css">
-  <link rel="stylesheet" href="views/plugins/slick/slick-theme.css">
+  <link rel="stylesheet" href="/plugins/slick/slick.css">
+  <link rel="stylesheet" href="/plugins/slick/slick-theme.css">
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="views/css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 
 </head>
 
 <body id="body">
-
-<section class="signin-page account">
-    <div class="container">
-        <div class="row">
+<section>
+    <div>
+        <div class="div-center">
         <?php if($error): ?>
-            <div class="row mt-30">
-                <div class="col-xs-12">
+            <div>
+                <div>
                     <div class="alertPart">
-                    <div class="alert alert-danger alert-common" role="alert"><i class="tf-ion-close-circled"></i><span>Registration Failed!</span> Email already registered</div>
+                    <div class="alert alert-danger errreg" role="alert"><i class="tf-ion-close-circled"></i><span>Registration Failed! </span>The following errors have occurred! <ul><?php foreach($errormsg as $msg){echo '<li>'.$msg.'<li>';} ?></ul></div>
                     </div>
                 </div>		
             </div>
         <?php endif ?>
-        <div class="col-md-6 col-md-offset-3">
+        <div class="">
             <div class="block text-center">
             <a href="/">
-                <svg width="250px" height="29px" viewBox="0 0 200 29" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink">
-                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" font-size="40"
-                        font-family="AustinBold, Austin" font-weight="bold">
-                        <g id="Group" transform="translate(-108.000000, -297.000000)" fill="#000000">
-                            <text id="AVIATO">
-                                <tspan x="108.94" y="325">YEM-YEM</tspan>
-                            </text>
-                        </g>
-                    </g>
-                </svg>
+					<img class="logo-h" src="/views/images/logo.jpg" alt="Logo">
             </a>
-            <form class="text-left clearfix" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" >
-                <?php CSRF::csrfInputField() ?>
-                <div class="form-group">
-                    <input type="text" name="firstname" class="form-control"  placeholder="Firstname">
+            <form class="text-left clearfix requires-validation" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" novalidate>
+                <?= CSRF::csrfInputField() ?>
+                <div class="form-group p-2">
+                    <input type="text" name="firstname" minlength="2" class="form-control <?= $state[0] ?>" value="<?= $firstname ?>" placeholder="Firstname" required>
+				  <div class="valid-feedback font-10">
+					 Firstname looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 Firstname is required!
+				  </div>
                 </div>
-                <div class="form-group">
-                    <input type="text" name="lastname" class="form-control"  placeholder="Lastname">
+                <div class="form-group p-2">
+                    <input type="text" name="lastname" minlength="2" class="form-control <?= $state[1] ?>" value="<?= $lastname ?>" placeholder="Lastname" required>
+				  <div class="valid-feedback font-10">
+					 Lastname looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 Lastname is required!
+				  </div>
                 </div>
-                <div class="form-group">
-                    <input type="email" name="email" class="form-control"  placeholder="Email">
+                <div class="form-group p-2">
+                    <input type="email" name="email" minlength="4" class="form-control <?= $state[2] ?>" value="<?= $email ?>" placeholder="Email" required>
+				  <div class="valid-feedback font-10">
+					 E-Mail looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 E-Mail is required!
+				  </div>
                 </div>
-                <div class="form-group">
-                    <input type="tel" name="phone" class="form-control"  placeholder="Phone">
+                <div class="form-group p-2">
+                    <input type="tel" name="phone" minlength="10" class="form-control <?= $state[3] ?>" value="<?= $phone ?>" placeholder="Phone" required>
+				  <div class="valid-feedback font-10">
+					 Phone looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 Phone is required!
+				  </div>
                 </div>
-                <div class="form-group">
-                    <input type="text" name="address" class="form-control"  placeholder="Address">
+                <div class="form-group p-2">
+                    <input type="text" name="address" minlength="15" class="form-control <?= $state[4] ?>" value="<?= $address ?>" placeholder="Address" required>
+				  <div class="valid-feedback font-10">
+					 Address looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 Address is required!
+				  </div>
                 </div>
-                <div class="form-group">
-                    <input type="password" name="password" class="form-control" placeholder="Password">
+                <div class="form-group p-2">
+                    <input type="text" name="password" minlength="8" id="pswd" class="form-control <?= $state[5] ?>" placeholder="Password" required>
+				  <div class="valid-feedback font-10">
+					 Password looks good!
+				  </div>
+				  <div class="invalid-feedback font-10">
+					 Password is required!
+				  </div>
                 </div>
-                <div class="text-center">
+                <div class="text-center p-2">
                     <button name="register" type="submit" class="btn btn-main text-center" >Register</button>
                 </div>
             </form>
@@ -131,30 +170,29 @@ if(isset($_POST['register']) && CSRF::validateToken($_POST['token'])) {
         </div>
     </div>
 </section>
-
  <!-- 
     Essential Scripts
     =====================================-->
-    
+	<!-- Validator -->
+    <script src="/js/validator.js"></script>
     <!-- Main jQuery -->
-    <script src="views/plugins/jquery/dist/jquery.min.js"></script>
-    <!-- Bootstrap 3.1 -->
-    <script src="views/plugins/bootstrap/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <!-- Popper 2.x -->
+    <!--<script src="views/plugins/popper/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"></script>-->
+	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+    <!-- Bootstrap 5.2 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
     <!-- Bootstrap Touchpin -->
-    <script src="views/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
-    <!-- Video Lightbox Plugin -->
-    <script src="views/plugins/ekko-lightbox/dist/ekko-lightbox.min.js"></script>
+    <script src="/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
     <!-- Count Down Js -->
-    <script src="views/plugins/syo-timer/build/jquery.syotimer.min.js"></script>
-
-    <!-- slick Carousel -->
-    <script src="views/plugins/slick/slick.min.js"></script>
-    <script src="views/plugins/slick/slick-animation.min.js'"></script>
-
+    <script src="/plugins/syo-timer/build/jquery.syotimer.min.js"></script>
+    <!-- slick Carousel
+    <script src="/plugins/slick/slick.min.js"></script>
+    <script src="/plugins/slick/slick-animation.min.js"></script> Unsure why this was loaded for the registration page?-->
     <!-- Main Js File -->
-    <script src="views/js/script.js"></script>
+    <script src="/js/script.js"></script>
     
     
 
-  </body>
-  </html>
+</body>
+</html>

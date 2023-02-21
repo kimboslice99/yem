@@ -1,0 +1,3 @@
+## changes
+
+swapped function addAttachment params $encoding and $type to better suit these scripts

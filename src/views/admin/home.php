@@ -4,18 +4,25 @@ require __DIR__ . '/header.php';
 require __DIR__ . '/../db.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
+require __DIR__ . '/../abuseipdb.php';
 
-if(isset($_POST['export']) && CSRF::validateToken($_POST['token'])) {
-    exportDB($host, $name, $user, $password);
+if(isset($_POST['export']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
+    exportDB($config['db_host'], $config['db_name'], $config['db_user'], $config['db_password']);
 }
 
-if(isset($_POST['import']) && CSRF::validateToken($_POST['token'])) {
+if(isset($_POST['import']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     importDB($pdo);
 }
 
-if(isset($_POST['send-email']) && CSRF::validateToken($_POST['token'])) {
+if(isset($_POST['send-email']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $title = filter_input(INPUT_POST, 'title');
     $message = filter_input(INPUT_POST, 'message');
+	if(isset($_FILES['attachment']) && $_FILES["attachment"]["error"] == 0) {
+		$attachment['name'] = $_FILES['attachment']['name'];
+		$attachment['tmp_name'] = $_FILES['attachment']['tmp_name'];
+	} else {
+		$attachment = null;
+	}
     if($_POST['flexRadioDefault'] == 'all') {
         $emails = array();
         $statement = $pdo->prepare("SELECT * FROM users");
@@ -24,10 +31,10 @@ if(isset($_POST['send-email']) && CSRF::validateToken($_POST['token'])) {
         foreach($results as $data) {
             $emails[] = $data['email'];
         }
-        sendEmail($emails, $title, $message, $key);
+        sendEmail($emails, $title, $message, false, $attachment, null);
     } else {
         $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-        sendEmail(array($email), $title, $message, $key);
+        sendEmail(array($email), $title, $message, false, $attachment, null);
     }
 }
 
@@ -49,7 +56,7 @@ foreach($transactions as $transaction) {
 }
 
 $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
-
+$csrf = CSRF::csrfInputField();
 ?>
 <div class="container">
     <div class="row">
@@ -96,7 +103,7 @@ $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
                         <div class="col-sm-8">
                             <div class="detail">
                                 <p class="detail-subtitle">Revenue</p>
-                                <span class="number">₦ <?= number_format($revenue, 2) ?></span>
+                                <span class="number">$ <?= number_format($revenue, 2) ?></span>
                             </div>
                         </div>
                     </div>
@@ -176,8 +183,8 @@ $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
                         <label class="col-sm-2">Send Email <br>
                             <!-- <small class="text-info">Normal Bootstrap elements</small> -->
                         </label>
-                        <form action="/admin/home" method="post">
-                        <?php CSRF::csrfInputField() ?>
+                        <form action="/admin/home" method="post" enctype="multipart/form-data">
+                        <?= $csrf ?>
                         <div class="col-sm-10">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="flexRadioDefault" id="radio1" value="all">
@@ -193,11 +200,11 @@ $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
                             <div class="form-check">
                                 <input type="text" name="title" placeholder="Title" class="form-control">
                             </div><br>
-                          <!--  <div class="form-check">
+                            <div class="form-check">
                                 <label class="form-label">Attachment</label>
                                 <input class="form-control" name="attachment" type="file" id="formFile1">
                                 <small class="text-muted"></small>
-                            </div><br>-->
+                            </div><br>
                             <div class="form-check">
                                 <textarea style="resize:none" type="text" name="message" placeholder="Message..." class="form-control" rows="3"></textarea>
                             </div><br>
@@ -216,7 +223,7 @@ $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
                                     <div class="row">
                                         <form action="/admin/home" id="import-form" method="post">
                                             <div class="col-sm-1">
-                                                <?php CSRF::csrfInputField() ?>
+                                                <?= $csrf ?>
                                                 <input type="file" name="file" id="file" required>
                                             </div><br>
                                             <div class="col-sm-12">
@@ -227,7 +234,7 @@ $userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
                                 </div>
                                 <div class="col-sm-12">
                                     <form action="/admin/home" method="post">
-                                        <?php CSRF::csrfInputField() ?>
+                                        <?= $csrf ?>
                                         <button name="export" type="submit" class="btn btn-primary mb-2"><i class="fas fa-file-export"></i> Export</button>
                                     </form>
                                 </div>

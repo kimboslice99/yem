@@ -1,8 +1,10 @@
 <?php
 
-session_start();
-
 function generateInvoice($date){
+	$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+	if (empty($config['tax'])){
+		$config['tax'] = 0;
+	}
     $invoice = "<!DOCTYPE html>
     <html lang=\"en\">
         <head>
@@ -128,22 +130,8 @@ function generateInvoice($date){
                                 <tr>
                                     <td class=\"title\">
                                     <a href=\"\">
-                                        <svg width=\"250px\" height=\"29px\" viewBox=\"0 0 200 29\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\"
-                                            xmlns:xlink=\"http://www.w3.org/1999/xlink\">
-                                            <g id=\"Page-1\" stroke=\"none\" stroke-width=\"1\" fill=\"none\" fill-rule=\"evenodd\" font-size=\"40\"
-                                                font-family=\"AustinBold, Austin\" font-weight=\"bold\">
-                                                <g id=\"Group\" transform=\"translate(-108.000000, -297.000000)\" fill=\"#000000\">
-                                                    <text id=\"AVIATO\">
-                                                        <tspan x=\"108.94\" y=\"325\">YEM-YEM</tspan>
-                                                    </text>
-                                                </g>
-                                            </g>
-                                        </svg>
+                                        <center><img width=\"500\" height=\"auto\" src=\"cid:logo.jpg\"></center>
                                     </a>
-                                    </td>
-
-                                    <td>
-                                        " . $date . "
                                     </td>
                                 </tr>
                             </table>
@@ -154,10 +142,13 @@ function generateInvoice($date){
                         <td colspan=\"2\">
                             <table>
                                 <tr>
+                                    <td>
+                                        " . $date . "
+                                    </td>
                                     <td>";
-                                $invoice .= htmlspecialchars($_SESSION['name']) . "<br />";
-                                $invoice .= htmlspecialchars($_SESSION['address']) . "<br />";
-                                $invoice .= htmlspecialchars($_SESSION['email']) . "
+                                $invoice .= $_SESSION['name'] . "<br />";
+                                $invoice .= $_SESSION['address'] . "<br />";
+                                $invoice .= $_SESSION['email'] . "
                                     </td>
                                 </tr>
                             </table>
@@ -173,16 +164,21 @@ function generateInvoice($date){
                     $total = 0;
                     foreach($_SESSION['cart'] as $item) {
                         $invoice .= "<tr class=\"item\">";
-                        $invoice .= "<td>" . htmlspecialchars($item['title']) . "(x" . htmlspecialchars($item['quantity'])  . ")</td>";
-                        $invoice .= "<td>₦" . number_format($item['price'] * $item['quantity'], 2) . "</td>";
+                        $invoice .= "<td>" . $item['title'] . "(x" . $item['quantity']  . ")</td>";
+                        $invoice .= "<td>$" . number_format($item['price'] * $item['quantity'], 2) . "</td>";
                         $invoice .= "</tr>";
                         $total += $item['price'] * $item['quantity'];
                     }
+					$taxed = 0;
+					foreach(explode(',', $config['tax']) as $rate) {
+						$taxed += tax($total, $rate);
+					}
+                    number_format(bcadd($total, $taxed, 2), 2);
 
                     $invoice .= "<tr class=\"total\">
                         <td></td>
 
-                        <td>Total: ₦" . number_format($total, 2) . "</td>
+                        <td>Total: $" . number_format($total, 2) . "</td>
                     </tr>
                 </table>
             </div>

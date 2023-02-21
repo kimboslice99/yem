@@ -1,16 +1,21 @@
 <?php 
 
-session_start();
+ob_start();
+
+require __DIR__ . '/db.php'; 
+require __DIR__ . '/admin/util.php';
 require __DIR__ . '/../csrf.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/abuseipdb.php';
+
 
 if(isset($_SESSION['name'])) {
     header('Location: /');
 }
 
 $error = false;
-
-if(isset($_POST['login']) && CSRF::validateToken($_POST['token'])) {
+$errormsg = '';
+if(isset($_POST['login']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
+  if(!AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)){
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
     $password = filter_input(INPUT_POST, 'password');
     $statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
@@ -18,94 +23,99 @@ if(isset($_POST['login']) && CSRF::validateToken($_POST['token'])) {
     if($statement->rowCount() > 0) {
         $result = $statement->fetchAll(PDO::FETCH_ASSOC);
         if(password_verify($password, $result[0]['password'])) {
-            $_SESSION['name'] = $result[0]['lastname'] . ' ' . $result[0]['firstname'];
-            $_SESSION['email'] = $result[0]['email'];
-            $_SESSION['phone'] = $result[0]['phone'];
-            $_SESSION['address'] = $result[0]['address'];
-            $_SESSION['created-time'] = $result[0]['created'];
+            $_SESSION['name'] = (string)$result[0]['lastname'] . ' ' . $result[0]['firstname'];
+			$_SESSION['firstname'] = (string)$result[0]['firstname'];
+			$_SESSION['lastname'] = (string)$result[0]['lastname'];
+            $_SESSION['email'] = (string)$result[0]['email'];
+            $_SESSION['phone'] = (string)$result[0]['phone'];
+            $_SESSION['address'] = (string)$result[0]['address'];
+            $_SESSION['created-time'] = (string)$result[0]['created'];
+            $_SESSION['id'] = (string)$result[0]['id'];
             header('Location: /');
-        }
+        } else {
         $error = true;
-    }
+		$errormsg = 'Invalid username/password';
+		}
+    } else {
     $error = true;
+	$errormsg = 'Invalid username/password';
+	}
+  } else {
+  $error = true;
+  $errormsg = 'Code 69';
+  }
 }
-
+$csrf = CSRF::csrfInputField();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-
+</style>
   <!-- Basic Page Needs
   ================================================== -->
   <meta charset="utf-8">
-  <title>Yem Yem Supermarket</title>
+  <title><?= $config['title'] ?></title>
 
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="Yem-Yem Supermarket">
+  <meta name="description" content="<?= $config['description'] ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="author" content="Yem-Yem">
-  <meta name="generator" content="Yem-Yem Supermarket">
+  
+  <!-- Sharing needs -->
+  <meta property="og:title" content="<?= $config['title'] ?>">
+  <meta property="og:description" content="<?= $config['description'] ?>">
+  <meta property="og:image" content="<?= $config['meta_image'] ?>">
+  <meta property="og:url" content="<?= preg_replace('/^www\./i', '', $_SERVER['HTTP_HOST']) ?>">
   
   <!-- Favicon -->
-  <link rel="shortcut icon" type="image/x-icon" href="views/images/favicon.png" />
+  <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.png" />
   
-  <link rel="stylesheet" href="views/plugins/themefisher-font/style.css">
+  <link rel="stylesheet" href="/plugins/themefisher-font/style.css">
   <!-- bootstrap.min css -->
-  <link rel="stylesheet" href="views/plugins/bootstrap/css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
   
   <!-- Animate css -->
-  <link rel="stylesheet" href="views/plugins/animate/animate.css">
+  <link rel="stylesheet" href="/plugins/animate/animate.css">
   <!-- Slick Carousel -->
-  <link rel="stylesheet" href="views/plugins/slick/slick.css">
-  <link rel="stylesheet" href="views/plugins/slick/slick-theme.css">
+  <link rel="stylesheet" href="/plugins/slick/slick.css">
+  <link rel="stylesheet" href="/plugins/slick/slick-theme.css">
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="views/css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 
 </head>
 
 <body id="body">
 
     <section class="signin-page account">
-    <div class="container">
-        <div class="row">
+    <div class="back">
+        <div class="div-center">
             
-        <?php if($error): ?>
+        <?php if($error):
+file_put_contents(__DIR__ . '/bin/failed_user.txt', date('M/d/Y H:m:s') . ' Login Failed! ' . $_SERVER['REMOTE_ADDR'] . "\n", FILE_APPEND|LOCK_EX);?>
             <div class="row mt-30">
                 <div class="col-xs-12">
                     <div class="alertPart">
-                    <div class="alert alert-danger alert-common" role="alert"><i class="tf-ion-close-circled"></i><span>Login Failed!</span> Invalid username/password</div>
+                    <div class="alert alert-danger alert-common" role="alert"><i class="tf-ion-close-circled"></i><span>Login Failed!</span><ul><li><?= $errormsg ?></li></ul></div>
                     </div>
                 </div>		
             </div>
         <?php endif ?>
 
-        <div class="col-md-6 col-md-offset-3">
+        <div>
             <div class="block text-center">
             <a href="/">
-                <svg width="250px" height="29px" viewBox="0 0 200 29" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink">
-                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" font-size="40"
-                        font-family="AustinBold, Austin" font-weight="bold">
-                        <g id="Group" transform="translate(-108.000000, -297.000000)" fill="#000000">
-                            <text id="AVIATO">
-                                <tspan x="108.94" y="325">YEM-YEM</tspan>
-                            </text>
-                        </g>
-                    </g>
-                </svg>
+				<img class="logo-h" src="/images/logo.jpg" alt="Logo">
             </a>
             <h2 class="text-center">Welcome Back</h2>
-            <form class="text-left clearfix" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" >
-                <?php CSRF::csrfInputField() ?>
-                <div class="form-group">
-                    <input type="email" name="email" class="form-control"  placeholder="Email">
+            <form class="text-left clearfix requires-validation" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" novalidate>
+                <?= $csrf ?>
+                <div class="form-group p-3">
+                    <input type="email" name="email" class="form-control"  placeholder="Email" required>
                 </div>
-                <div class="form-group">
-                    <input type="password" name="password" class="form-control" placeholder="Password">
+                <div class="form-group p-3">
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
                 </div>
                 <div class="text-center">
                     <button name="login" type="submit" class="btn btn-main text-center" >Login</button>
@@ -124,22 +134,22 @@ if(isset($_POST['login']) && CSRF::validateToken($_POST['token'])) {
     =====================================-->
     
     <!-- Main jQuery -->
-    <script src="views/plugins/jquery/dist/jquery.min.js"></script>
-    <!-- Bootstrap 3.1 -->
-    <script src="views/plugins/bootstrap/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <!-- Popper 2.11.6 -->
+	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+    <!-- Bootstrap 5.3.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
     <!-- Bootstrap Touchpin -->
-    <script src="views/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
-    <!-- Video Lightbox Plugin -->
-    <script src="views/plugins/ekko-lightbox/dist/ekko-lightbox.min.js"></script>
+    <script src="/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
     <!-- Count Down Js -->
-    <script src="views/plugins/syo-timer/build/jquery.syotimer.min.js"></script>
-
+    <script src="/plugins/syo-timer/build/jquery.syotimer.min.js"></script>
     <!-- slick Carousel -->
-    <script src="views/plugins/slick/slick.min.js"></script>
-    <script src="views/plugins/slick/slick-animation.min.js'"></script>
+    <script src="/plugins/slick/slick.min.js"></script>
+    <script src="/plugins/slick/slick-animation.min.js"></script>
 
     <!-- Main Js File -->
-    <script src="views/js/script.js"></script>
+    <script src="/js/script.js"></script>
+    <script src="/js/validator.js"></script>
     
     
 

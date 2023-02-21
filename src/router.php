@@ -27,7 +27,6 @@ class Route{
             call_user_func(self::$uriCallback[$uri]);
         } else {
             http_response_code(404);
-            require __DIR__ . '/views/404.php';
         }
     }
 }

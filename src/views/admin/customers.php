@@ -3,11 +3,12 @@
 require __DIR__ . '/header.php';
 require __DIR__ . '/../db.php';
 require __DIR__ . '/../../csrf.php';
+require __DIR__ . '/../abuseipdb.php';
 
 $customers;
 $edit = false;
 
-if(isset($_POST['submit']) && CSRF::validateToken($_POST['token'])) {
+if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     if(isset($_POST['firstname'])) {
         $statement = $pdo->prepare("UPDATE users SET firstname=? WHERE id=?");
@@ -43,7 +44,7 @@ if(isset($_GET['id'])) {
         $customers = $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 } else {
-    if(isset($_POST['delete']) && CSRF::validateToken($_POST['token'])) {
+    if(isset($_POST['delete']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
         $statement = $pdo->prepare("DELETE FROM users WHERE id=?");
         $statement->execute(array($id));
@@ -55,7 +56,7 @@ if(isset($_GET['id'])) {
         $customers = $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-
+$csrf = CSRF::csrfInputField();
 ?>
 <div class="container">
     <div class="page-title">
@@ -68,7 +69,7 @@ if(isset($_GET['id'])) {
             <div class="card-header">Edit Customer</div>
             <div class="card-body">
                 <form accept-charset="utf-8" method="post" action="/admin/customers">
-                    <?php CSRF::csrfInputField() ?>
+                    <?= $csrf ?>
                     <div class="row g-2">
                         <div class="mb-3 col-md-4">
                             <input type="text" name="firstname" class="form-control" placeholder="Firstname" value="<?= $customers[0]['firstname'] ?>">
@@ -119,7 +120,7 @@ if(isset($_GET['id'])) {
                                     <td><?= $customer['address'] ?></td>
                                     <td class="text-end">
                                         <form action="/admin/customers" method="post">
-                                            <?php CSRF::csrfInputField() ?>
+                                            <?= $csrf ?>
                                             <input type="text" name="id" value="<?= $customer['id'] ?>" hidden>
                                             <a href="/admin/customers?id=<?= $customer['id']; ?>" class="btn btn-outline-info btn-rounded"><i class="fas fa-pen"></i></a>
                                             <button name="delete" type="submit" class="btn btn-outline-danger btn-rounded"><i class="fas fa-trash"></i></button>
