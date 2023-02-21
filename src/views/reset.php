@@ -1,7 +1,7 @@
 <?php
 
 require __DIR__ . '/../csrf.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 require __DIR__ . '/abuseipdb.php';
 
 if(isset($_SESSION['name'])) {
@@ -17,13 +17,15 @@ $success;
 $error = false;
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
 	if(AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) { $error = true ; }
-	  if(!empty($_POST['code']) && (!$error)) {
+	if(!empty($_POST['code']) && (!$error)) {
 		$code = filter_input(INPUT_POST, 'code');
-		$statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
-		$statement->execute(array(filter_input(INPUT_GET, 'email', FILTER_SANITIZE_EMAIL)));
-		if($statement->rowCount() > 0) {
-			$result = $statement->fetchAll(PDO::FETCH_ASSOC);
-			if($code == $result[0]['code'] && time() <= $result[0]['expiration']) {
+		$statement = $mysqli->prepare("SELECT * FROM users WHERE email=?");
+		$statement->bind_param('s', filter_input(INPUT_GET, 'email', FILTER_SANITIZE_EMAIL));
+		$statement->execute();
+		$result = $statement->get_result();
+		if($statement->affected_rows > 0) {
+			$assoc = $result->fetch_assoc();
+			if($code == $assoc['code'] && time() <= $assoc['expiration']) {
 				$success= true;
 				$_SESSION['tmp_code'] = $code;
 			} else {
@@ -46,9 +48,13 @@ if(isset($_POST['reset']) && CSRF::validateToken(filter_input(INPUT_POST, 'token
 	if(AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) { $error = true ; }
 	$sessioncheck = filter_var($_SESSION['tmp_code']);
     $password = password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT);
-    $statement = $pdo->prepare("UPDATE users SET password=?, code=?, expiration=? WHERE email=? AND code=?");
-    $statement->execute(array($password, 0, 0, filter_input(INPUT_GET, 'email', FILTER_SANITIZE_EMAIL), $sessioncheck));
-	if($statement->rowCount() > 0 && !$error) {
+	$email = urldecode(filter_input(INPUT_GET, 'email', FILTER_SANITIZE_EMAIL));
+	$zero = 0;
+    $statement = $mysqli->prepare("UPDATE users SET password=?, code=?, expiration=? WHERE email=? AND code=?");
+	$statement->bind_param('siisi', $password, $zero, $zero, $email, $sessioncheck);
+    $statement->execute();
+	$statement->get_result();
+	if($statement->affected_rows > 0 && !$error) {
 		unset($_SESSION['tmp_code']);
 		header('Location: /login');
 	} else {
@@ -154,7 +160,7 @@ $csrf = CSRF::csrfInputField();
     <!-- Bootstrap 5.3.0 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
     <!-- Bootstrap Touchpin -->
-    <script src="views/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
+    <script src="/plugins/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
     <!-- Count Down Js -->
     <script src="/plugins/syo-timer/build/jquery.syotimer.min.js"></script>
 

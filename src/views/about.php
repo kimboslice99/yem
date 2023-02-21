@@ -1,11 +1,12 @@
 <?php 
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/db.php'; 
+require __DIR__ . '/mysqli.php'; 
 
-$statement = $pdo->prepare("SELECT * FROM about");
+$statement = $mysqli->prepare("SELECT * FROM about");
 $statement->execute();
-$about = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+$about = $result->fetch_assoc();
 ?>
 <section class="about section">
 	<div class="container">
@@ -15,7 +16,7 @@ $about = $statement->fetchAll(PDO::FETCH_ASSOC);
 			</div>
 			<div class="col-md-6">
 				<h2>About Our Shop</h2>
-				<p><?= htmlspecialchars($about[0]['about']) ?></p>
+				<p><?= htmlspecialchars($about['about']) ?></p>
 			</div>
 		</div>
 		<div class="row mt-40">

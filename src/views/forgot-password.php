@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 require __DIR__ . '/../csrf.php';
 require __DIR__ . '/admin/util.php';
 require __DIR__ . '/abuseipdb.php';
@@ -12,19 +12,23 @@ if(isset($_SESSION['name'])) {
 $success;
 $errcode = $error = false;
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
-  if(AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) { $error = true ; }
+  if(AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) { $error = true; }
   $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-  $code = rand(10000, 99999);
-  $expirationTime = time() * 30 * 60;
-  $statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
-  $statement->execute(array($email));
+  $code = rand(100000, 999999);
+  $expirationTime = time() + 30 * 60; // expire in time() + 30 * 60 seconds = 30 minutes
     if(!$error) {
-	  if($statement->rowCount() > 0) {
-		$statement = $pdo->prepare("UPDATE users SET code=?, expiration=? WHERE email=?");
-		$statement->execute(array($code, $expirationTime, $email));
-		if($statement->rowCount() > 0) {
+	  $statement = $mysqli->prepare("SELECT * FROM users WHERE email=?");
+	  $statement->bind_param('s', $email);
+	  $statement->execute();
+	  $statement->get_result();
+	  if($statement->affected_rows > 0) {
+		$statement = $mysqli->prepare("UPDATE users SET code=?, expiration=? WHERE email=?");
+		$statement->bind_param('iis', $code, $expirationTime, $email);
+		$statement->execute();
+		$statement->get_result();
+		if($statement->affected_rows > 0) {
 			sendEmail(array($email), "Password Reset", "Reset code: ". $code . "\n\nIf you didn't request for a password reset, ignore this message.", false, null, null);
-			header('Location: /reset?email='. $email);
+			header('Location: /reset?email='. urlencode($email));
 		} else {
 			$success = false;
 			$errcode = 3;
@@ -82,7 +86,7 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
       <?php if(isset($success) && !$success): ?>
         <div class="alert alert-danger errreg" role="alert">
             <!--<button type="button" class="btn" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>-->
-            <i class="tf-ion-android-checkbox-outline"></i> Error code: <?= var_dump($errcode) ?><br> Account doesn't exist
+            <i class="tf-ion-android-checkbox-outline"></i> Error code: <?= $errcode ?><br> Account doesn't exist
         </div>
       <?php endif ?>
       <div>

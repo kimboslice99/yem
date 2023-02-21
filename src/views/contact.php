@@ -2,8 +2,6 @@
 
 require __DIR__ . '/header.php';
 require __DIR__ . '/../csrf.php';
-require __DIR__ . '/db.php';
-require __DIR__ . '/admin/util.php';
 require __DIR__ . '/abuseipdb.php';
 
 $errormsg = array();
@@ -20,9 +18,9 @@ if(isset($_POST['contact']) && CSRF::validateToken(filter_input(INPUT_POST, 'tok
 	$phone = filter_input(INPUT_POST, 'phone');
 	$message = filter_input(INPUT_POST, 'message');
 	if(!$error) {
-	if(sendEmail(array($config['mail_to_address']), "Contact form", "New message from $name\n\n$message\n\nPhone: $phone\n\nRemote Address: ".$_SERVER['REMOTE_ADDR'], false, null)) {
-		$success = true;
-		$name = $email = $phone = $message = '';
+		if(sendEmail(array($config['mail_to_address']), "Contact form", "New message from $name\n\n$message\n\nPhone: $phone\n\nRemote Address: ".$_SERVER['REMOTE_ADDR'], false, null, null)) {
+			$success = true;
+			$name = $email = $phone = $message = '';
 		} else {
 			$error = true && array_push($errormsg, 'Backend errors, Sorry!');
 			}

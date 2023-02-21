@@ -30,18 +30,26 @@ if(!empty($_SESSION['cart'])){
 }
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/db.php';
-
+require __DIR__ . '/mysqli.php';
+$relatedItems = array();
 $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-$statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
-$statement->execute(array($id));
-if($statement->rowCount() > 0) {
-$item = $statement->fetchAll(PDO::FETCH_ASSOC);
-$images = unserialize($item[0]['images']);
-($item[0]['qty'] <= 0)?$stock = false:$stock = true;
-$statement = $pdo->prepare("SELECT * FROM products WHERE category=? ORDER BY rand() LIMIT 4");
-$statement->execute(array($item[0]['category']));
-$relatedItems = $statement->fetchAll(PDO::FETCH_ASSOC);
+$statement = $mysqli->prepare("SELECT * FROM products WHERE id=?");
+$statement->bind_param('i', $id);
+$statement->execute();
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	$item = $result->fetch_assoc();
+	$images = unserialize($item['images']);
+	($item['qty'] <= 0)?$stock = false:$stock = true;
+	$statement = $mysqli->prepare("SELECT * FROM products WHERE category=? ORDER BY rand() LIMIT 4");
+	$statement->bind_param('s', $item['category']);
+	$statement->execute();
+	$result = $statement->get_result();
+		if($statement->affected_rows > 0) {
+			while($assoc = $result->fetch_assoc()){
+				array_push($relatedItems, $assoc);
+			}
+		}
 }
 //var_dump($_SESSION['cart']);
 header("Content-Security-Policy: default-src 'none';connect-src 'self';script-src-elem 'self' https://code.jquery.com/jquery-3.6.3.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js;style-src-elem 'self' https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.compat.css https://assets.braintreegateway.com/web/dropin/1.34.0/css/dropin.min.css https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css https://fonts.googleapis.com/;style-src 'self' 'unsafe-inline';font-src 'self' https://fonts.gstatic.com/;img-src 'self' data:; report-uri /csp/report;");
@@ -54,7 +62,7 @@ header("Content-Security-Policy: default-src 'none';connect-src 'self';script-sr
 				<ol class="breadcrumb">
 					<li class="breadcrumb-item"><a href="/">Home</a></li>
 					<li class="breadcrumb-item"><a href="/products">Shop</a></li>
-					<li class="breadcrumb-item active"><?= $item[0]['category']; ?></li>
+					<li class="breadcrumb-item active"><?= $item['category']; ?></li>
 				</ol>
 			</div>
 		</div>
@@ -118,33 +126,33 @@ header("Content-Security-Policy: default-src 'none';connect-src 'self';script-sr
                 </div>
             </div>
             <div class="col-md-5">
-                <form action="/item?id=<?= $item[0]['id'] ?>" method="post">
+                <form action="/item?id=<?= $item['id'] ?>" method="post">
                     <div class="single-product-details">
-                        <h2><?= $item[0]['title'] ?></h2>
+                        <h2><?= $item['title'] ?></h2>
                         <?= CSRF::csrfInputField() ?>
-                        <input type="text" name="title" value="<?= $item[0]['title'] ?>" hidden>
-                        <p class="product-price"><?= $config['currency_symbol'].number_format($item[0]['price'], 2) ?></p>
-                        <input type="text" name="price" value="<?= $item[0]['price'] ?>" hidden>
-                        <input type="text" name="weight" value="<?= $item[0]['weight'] ?>" hidden>
-                        <input type="text" name="image" value="<?= (!empty(unserialize($item[0]['images'])[0]))?unserialize($item[0]['images'])[0]:'/images/noimg.jpg'; ?>" hidden>
+                        <input type="text" name="title" value="<?= $item['title'] ?>" hidden>
+                        <p class="product-price"><?= $config['currency_symbol'].number_format($item['price'], 2) ?></p>
+                        <input type="text" name="price" value="<?= $item['price'] ?>" hidden>
+                        <input type="text" name="weight" value="<?= $item['weight'] ?>" hidden>
+                        <input type="text" name="image" value="<?= (!empty(unserialize($item['images'])[0]))?unserialize($item['images'])[0]:'/images/noimg.jpg'; ?>" hidden>
                         <p class="product-description mt-20">
-                            <?= $item[0]['description'] ?>
-                            <input type="text" name="description" value="<?= $item[0]['description'] ?>" hidden>
+                            <?= $item['description'] ?>
+                            <input type="text" name="description" value="<?= $item['description'] ?>" hidden>
                         </p>
                         <div class="product-quantity">
                             <span>Quantity:</span>
                             <div class="product-quantity-slider">
-                                <input id="product-quantity" type="number" min=0 max=<?= $item[0]['qty'] ?> value="1" name="quantity">
+                                <input id="product-quantity" type="number" min=0 max=<?= $item['qty'] ?> value="1" name="quantity">
                             </div>
                         </div>
                         <div class="product-category">
                             <span>Categories:</span>
                             <ul>
-                                <li><a href="/products?c=<?= $item[0]['category'] ?>"><?= $item[0]['category'] ?></a></li>
-                                <input type="text" name="category" value="<?= $item[0]['category'] ?>" hidden>
+                                <li><a href="/products?c=<?= $item['category'] ?>"><?= $item['category'] ?></a></li>
+                                <input type="text" name="category" value="<?= $item['category'] ?>" hidden>
                             </ul>
                         </div>
-						<input type="text" name="id" value="<?= $item[0]['id'] ?>" hidden>
+						<input type="text" name="id" value="<?= $item['id'] ?>" hidden>
                         <?php if($inCart): ?>
 							<button name="cart" type="submit" class="btn btn-main text-center text-success" disabled>In Cart!</button>
 						<?php elseif(!$stock): ?>

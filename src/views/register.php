@@ -31,13 +31,13 @@ if(isset($_POST['register']) && CSRF::validateToken(filter_input(INPUT_POST, 'to
   $statement = $mysqli->prepare("SELECT * FROM users WHERE email=?");
   $statement->bind_param('s', $email);
   $statement->execute();
-  $result = $statement->get_result();
+  $statement->get_result();
   if($statement->affected_rows > 0) {$error=true && array_push($errormsg, 'E-Mail in use!<br>') && $state[2]='is-invalid';}// email exists in database/user already signed up
   if($error === false) {
 		$statement = $mysqli->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
 		$statement->bind_param('sssssss', $firstname, $lastname, $email, $phone, $address, $password, $createdTime);
 		$statement->execute();
-		$result = $statement->get_result(); // for whatever reason we have to do statement->get_result in order to get affected_rows
+		$statement->get_result(); // for whatever reason we have to do statement->get_result in order to get affected_rows
 		if($statement->affected_rows > 0) {
 			sendEmail(array($email), "Welcome!", "Thanks for registering!", false, null, null);
 			$_SESSION['name'] = $lastname . ' ' . $firstname;

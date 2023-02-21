@@ -2,7 +2,7 @@
 
 require __DIR__ . '/header.php';
 require __DIR__ . '/../csrf.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 
 $products;
 $searchEmpty = true;
@@ -10,62 +10,82 @@ $page = 1;
 $results_per_page = 10;
 $page_first_result;
 $number_of_pages;
-
-$statement = $pdo->prepare("SELECT * FROM categories ORDER BY title");
+$categories = array();
+$statement = $mysqli->prepare("SELECT * FROM categories ORDER BY title");
 $statement->execute();
-$categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	while($assoc = $result->fetch_assoc()){
+		array_push($categories, $assoc);
+	}
+}
 
 if(!isset($_GET['p'])) {
 	$page = 1;
 } else {
 	$page = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_NUMBER_INT);
 }
-
+$products = array();
 if(isset($_POST['q']) && isset($_GET['c']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
 	$query = filter_input(INPUT_POST, 'q');
 	$category = filter_input(INPUT_GET, 'c');
-	$statement = $pdo->prepare("SELECT * FROM products WHERE category='$category' AND CONCAT(`title`, `price`, `description`, `category`) LIKE '%$query%'");
+	$statement = $mysqli->prepare("SELECT * FROM products WHERE category='$category' AND CONCAT(`title`, `price`, `description`, `category`) LIKE '%$query%'");
 	$statement->execute();
-	if($statement->rowCount() > 0){
-		$products = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0){
+		while($assoc = $result->fetch_assoc()){
+			array_push($products, $assoc);
+		}
 		$searchEmpty = false;
 	}
 } elseif(isset($_POST['q']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
 	$query = filter_input(INPUT_POST, 'q');
-	$statement = $pdo->prepare("SELECT * FROM products WHERE CONCAT(`title`, `price`, `description`, `category`) LIKE '%$query%'");
+	$statement = $mysqli->prepare("SELECT * FROM products WHERE CONCAT(`title`, `price`, `description`, `category`) LIKE '%$query%'");
 	$statement->execute();
-	if($statement->rowCount() > 0){
-		$products = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0){
+		while($assoc = $result->fetch_assoc()){
+			array_push($products, $assoc);
+		}
 		$searchEmpty = false;
 	}
 } elseif(isset($_GET['c'])) {
 	$page_first_result = ($page - 1) * $results_per_page;
-	$statement = $pdo->prepare("SELECT count(*) FROM products WHERE category=?");
-	$statement->execute(array(filter_input(INPUT_GET, 'c')));
-	$number_of_result = $statement->fetchColumn();
+	$statement = $mysqli->prepare("SELECT count(*) FROM products WHERE category=?");
+	$statement->bind_param('s', filter_input(INPUT_GET, 'c'));
+	$statement->execute();
+	$result = $statement->get_result();
+	$number_of_result = $result->fetch_assoc()["count(*)"];
 	$number_of_pages = ceil($number_of_result / $results_per_page);
 
-	$statement = $pdo->prepare("SELECT * FROM products WHERE category=? LIMIT $page_first_result, $results_per_page");
-	$statement->execute(array(filter_input(INPUT_GET, 'c')));
-	if($statement->rowCount() > 0) {
-		$products = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$statement = $mysqli->prepare("SELECT * FROM products WHERE category=? LIMIT $page_first_result, $results_per_page");
+	$statement->bind_param('s', filter_input(INPUT_GET, 'c'));
+	$statement->execute();
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0){
+		while($assoc = $result->fetch_assoc()){
+			array_push($products, $assoc);
+		}
 		$searchEmpty = false;
 	}
 } else {
 	$page_first_result = ($page - 1) * $results_per_page;
-	$statement = $pdo->prepare("SELECT count(*) FROM products");
+	$statement = $mysqli->prepare("SELECT count(*) FROM products");
 	$statement->execute();
-	$number_of_result = $statement->fetchColumn();
+	$result = $statement->get_result();
+	$number_of_result = $result->fetch_assoc()["count(*)"];
+
 	$number_of_pages = ceil($number_of_result / $results_per_page);
-	$statement = $pdo->prepare("SELECT * FROM products LIMIT $page_first_result, $results_per_page");
+	$statement = $mysqli->prepare("SELECT * FROM products LIMIT $page_first_result, $results_per_page");
 	$statement->execute();
-	if($statement->rowCount() > 0) {
-		$products = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0){
+		while($assoc = $result->fetch_assoc()){
+			array_push($products, $assoc);
+		}
 		$searchEmpty = false;
 	}
 }
-
-
 
 $csrf = CSRF::csrfInputField();
 ?>

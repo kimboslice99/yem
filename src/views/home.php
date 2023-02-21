@@ -1,13 +1,16 @@
 <?php 
 
 require __DIR__ . '/header.php'; 
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 
-$items;
-$statement = $pdo->prepare("SELECT * FROM products ORDER BY rand() LIMIT 9");
+$items = array();
+$statement = $mysqli->prepare("SELECT * FROM products ORDER BY rand() LIMIT 9");
 $statement->execute();
-if($statement->rowCount() > 0) {
-    $items = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	while($assoc = $result->fetch_assoc()){
+		array_push($items, $assoc);
+	}
 }
 
 ?>
