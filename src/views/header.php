@@ -84,7 +84,7 @@ $phone = $config['contact_phone'];
 
                                     <div class="cart-summary">
                                         <span>Total</span>
-                                        <span class="total-price">$ 0.00</span>
+                                        <span class="total-price"><?= $config['currency_symbol'] ?> 0.00</span>
                                     </div>
                                     <ul class="text-center">
                                         <li><a href="/cart" class="btn btn-small">View Cart</a></li>
@@ -121,12 +121,12 @@ $phone = $config['contact_phone'];
 								</table>
                                     <div class="cart-summary">
                                         <span>Total</span>
-                                        <span class="total-price">$<?php 
+                                        <span class="total-price"><?php 
                                                 $total = 0;
                                                 foreach($_SESSION['cart'] as $item) {
                                                     $total += $item['price'] * $item['quantity'];
                                                 }
-                                                echo number_format($total, 2);
+                                                echo $config['currency_symbol'].number_format($total, 2);
                                             ?>
                                         </span>
                                     </div>

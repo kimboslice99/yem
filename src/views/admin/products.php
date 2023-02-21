@@ -29,6 +29,10 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
         $statement = $pdo->prepare("UPDATE products SET qty=? WHERE id=?");
         $statement->execute(array(filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT), $id));
     }
+    if(isset($_POST['w'])) {
+        $statement = $pdo->prepare("UPDATE products SET weight=? WHERE id=?");
+        $statement->execute(array(filter_input(INPUT_POST, 'w', FILTER_SANITIZE_NUMBER_INT), $id));
+    }
     if(isset($_POST['category'])) {
         $statement = $pdo->prepare("SELECT * FROM categories WHERE title=?");
         $statement->execute(array(filter_input(INPUT_POST, 'category')));
@@ -60,7 +64,7 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
     }
 }
 // Delete picture
-if(isset($_POST['delete_pic']) && isset($_POST['id']) && isset($_POST['image']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
+if(isset($_POST['delete_pic']) && isset($_POST['id']) && isset($_POST['image']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     $image = filter_input(INPUT_POST, 'image');
 	$statement = $pdo->prepare("SELECT images FROM products WHERE ID=?");
@@ -81,7 +85,7 @@ if(isset($_POST['delete_pic']) && isset($_POST['id']) && isset($_POST['image']) 
 }
 $error = false;
 // Open Product
-if(isset($_GET['id'])) {
+if(isset($_GET['id']) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $edit = true;
     $statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
     $statement->execute(array(filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT)));
@@ -92,7 +96,7 @@ if(isset($_GET['id'])) {
     $statement->execute();
     $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
 } else { // Delete product
-    if(isset($_POST['delete']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
+    if(isset($_POST['delete']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
         $statement = $pdo->prepare("DELETE FROM products WHERE id=?");
         $statement->execute(array($id));
@@ -139,6 +143,10 @@ $csrf = CSRF::csrfInputField();
                         <div class="mb-3">
                             <label class="form-label">Quantity</label>
                             <input class="form-control" type="number" name="qty" value="<?= $items[0]['qty'] ?>">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Weight</label>
+                            <input class="form-control" type="number" name="w" value="<?= $items[0]['weight'] ?>">
                         </div>
                         <div class="mb-3">
                             <label for="language" class="form-label">Category</label>

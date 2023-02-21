@@ -34,7 +34,7 @@ smtp_password=""
 abuseipdb=""
 # ClamAV
 clam_path=""
-# Path to config file
+# Path to config file, a sample should be beside this config
 clam_config_path=""
 # taxes
 tax="5"

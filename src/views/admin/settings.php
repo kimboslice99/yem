@@ -70,9 +70,10 @@ if(isset($_POST['app-submit']) && CSRF::validateToken(filter_input(INPUT_POST, '
 		$bytes = strtoupper(bin2hex(fread($handle, 4)));
 		fclose($handle);
 		if(!in_array($bytes, array('FFD8FFE0'))) { $error = true; }
+		if(clamdscan($_FILES["logo"]["tmp_name"])){ $error = true; }
 		if(!$error){
 			move_uploaded_file($_FILES['logo']['tmp_name'], __DIR__ .'/../../images/logo.jpg');
-			//compressImage($_FILES["logo"]["tmp_name"], __DIR__ .'/../images/logo.jpg', 75, 600, 1500, 'transparent');
+			//compressImage($_FILES["logo"]["tmp_name"], __DIR__ .'/../../images/logo.jpg', 75, 600, 1500, 'white');
 		}
 	}
 	if(isset($_FILES['favicon']) && $_FILES['favicon']['error'] == 0) {
@@ -84,9 +85,10 @@ if(isset($_POST['app-submit']) && CSRF::validateToken(filter_input(INPUT_POST, '
 		$bytes = strtoupper(bin2hex(fread($handle, 4)));
 		fclose($handle);
 		if(!in_array($bytes, array('89504E47'))) { $error = true; }
+		if(clamdscan($_FILES["favicon"]["tmp_name"])){ $error = true; }
 		if(!$error){
-			//move_uploaded_file($_FILES['favicon']['tmp_name'], __DIR__ .'/../images/favicon.png');
-			compressImage($_FILES["favicon"]["tmp_name"], __DIR__ .'/../images/favicon.png', 75, 32, 32, 'transparent');
+			//move_uploaded_file($_FILES['favicon']['tmp_name'], __DIR__ .'/../../images/favicon.png');
+			compressImage($_FILES["favicon"]["tmp_name"], __DIR__ .'/../../images/favicon.png', 75, 32, 32, 'transparent');
 		}
 	}
 }

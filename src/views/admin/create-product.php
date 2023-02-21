@@ -12,6 +12,7 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
     $price = filter_input(INPUT_POST, 'price');
     $category = filter_input(INPUT_POST, 'category');
     $qty = filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT);
+    $weight = filter_input(INPUT_POST, 'w', FILTER_SANITIZE_NUMBER_INT);
     $statement = $pdo->prepare("SELECT count(*) FROM categories WHERE title=?");
     $statement->execute(array($category));
     if(!$statement->fetchColumn() > 0) {
@@ -19,8 +20,8 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
         $statement->execute(array($category));
     }
     $paths = serialize(uploadImages());
-    $statement = $pdo->prepare("INSERT INTO products(title, price, description, category, images, qty) VALUES (?, ?, ?, ?, ?, ?)");
-    $statement->execute(array($title, $price, $description, $category, $paths, $qty));
+    $statement = $pdo->prepare("INSERT INTO products(title, price, description, category, images, qty, weight) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $statement->execute(array($title, $price, $description, $category, $paths, $qty, $weight));
     header('Location: /admin/products');
 }
 
@@ -52,6 +53,10 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
                         <div class="mb-3">
                             <label class="form-label">Quantity</label>
                             <input class="form-control" name="qty" type="number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Weight</label>
+                            <input class="form-control" name="w" type="number" required>
                         </div>
                         <div class="mb-3">
                             <label for="language" class="form-label">Category</label>

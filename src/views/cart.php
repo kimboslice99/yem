@@ -91,8 +91,18 @@ $csrf = CSRF::csrfInputField();
                           <td class="">
                             <a href="/cart-remove-item?id=<?= $item['id'] ?>" class="product-remove">Remove</a>
                           </td>
-                          <td class="">$<?= number_format($item['price'] * $item['quantity'], 2) ?></td><!-- Federal tax + provncial tax -->
-                          <td class="">$<?= number_format($item['price'] * $item['quantity'] + $item['price'] * $item['quantity'] * 5 / 100 + $item['price'] * $item['quantity'] * 8 / 100, 2) ?></td>
+                          <td class=""><?= $config['currency_symbol'].number_format($item['price'] * $item['quantity'], 2) ?></td>
+                          <td class=""><?php
+                            $itemtotal = 0;
+                            foreach($_SESSION['cart'] as $item) {
+                              $itemtotal += $item['price'] * $item['quantity'];
+                            }
+							$taxed = 0;
+							foreach(explode(',', $tax) as $rate) {
+								$taxed += tax($itemtotal, $rate);
+							}
+                            echo $config['currency_symbol'].number_format(bcadd($itemtotal, $taxed, 2), 2);
+						  ?></td>
                         </tr>
                       <?php endforeach; ?>
 
@@ -104,24 +114,17 @@ $csrf = CSRF::csrfInputField();
                       </td>
                       <td class=""></td>
                       <td class=""></td>
-                      <td class="">$<?php
-                          if(!isset($_SESSION['cart'])) {
-                            echo '0.00';
-                          } else {
+                      <td class=""><?php
                             $notaxtotal = 0;
                             foreach($_SESSION['cart'] as $item) {
                               $notaxtotal += $item['price'] * $item['quantity'];
                             }
-                            echo number_format($notaxtotal, 2);
-                          }
+                            echo $config['currency_symbol'].number_format($notaxtotal, 2);
                         ?>
                       </td>
-					  <td id="total">$<?php
-                          if(!isset($_SESSION['cart'])) {
-                            echo '0.00';
-                          } else {
+					  <td id="total"><?php
                             $total = 0;
-                            $weight = 0;
+                            $weight = 0; // add weight here, we'll use it later in the script
                             foreach($_SESSION['cart'] as $item) {
                               $total += $item['price'] * $item['quantity'];
                               $weight += $item['weight'] * $item['quantity'];
@@ -130,8 +133,7 @@ $csrf = CSRF::csrfInputField();
 							foreach(explode(',', $tax) as $rate) {
 								$taxed += tax($total, $rate);
 							}
-                            echo number_format(bcadd($total, $taxed, 2), 2);
-                          }
+                            echo $config['currency_symbol'].number_format(bcadd($total, $taxed, 2), 2);
                         ?></td>
                     </tr>
                   </tbody>
