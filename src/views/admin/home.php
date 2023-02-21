@@ -2,17 +2,20 @@
 
 require __DIR__ . '/header.php'; 
 require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
 require __DIR__ . '/../abuseipdb.php';
 
 if(isset($_POST['export']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
 	(isset($_POST['compression']))?$compression = true:$compression=false;
-    exportDB($compression, $pdo);
+    exportDB($compression, $mysqli);
 }
 
 if(isset($_POST['import']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
-    importDB($pdo);
+	if(isset($_FILES['sql']) && $_FILES['sql']['error'] == 0 && !clamdscan($_FILES['sql']['tmp_name'])){
+		importDB($_FILES['sql']['tmp_name'], $mysqli);
+	}
 }
 
 if(isset($_POST['send-email']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
@@ -222,10 +225,10 @@ $csrf = CSRF::csrfInputField();
                             <div class="mb-3 row">
                                 <div class="col-sm-12">
                                     <div class="row">
-                                        <form action="/admin/home" id="import-form" method="post">
+                                        <form action="/admin/home" id="import-form" method="post" enctype="multipart/form-data">
                                             <div class="col-sm-1">
                                                 <?= $csrf ?>
-                                                <input type="file" name="file" id="file" required>
+                                                <input type="file" name="sql" id="file" required>
                                             </div><br>
                                             <div class="col-sm-12">
                                                 <button name="import" type="submit" class="btn btn-secondary mb-2"><i class="fas fa-file-import"></i> Import</button>

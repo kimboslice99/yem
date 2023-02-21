@@ -46,130 +46,57 @@ function sendEmail($emails, $title, $message, $html, $attachment, $image) {
 		}
 }
 
-function exportDB($compression, $pdo) {
-	$pdo->setAttribute(PDO::ATTR_ORACLE_NULLS, PDO::NULL_NATURAL );
+function exportDB($compression, $db) {
 	$filename = __DIR__.'/'.time();
 	//create/open files
+    $tables = array();
+    $result = $db->query("SHOW TABLES");
+    while($row = $result->fetch_row()) { 
+        $tables[] = $row[0];
+    }
+
+    $return = '';
+
+    foreach($tables as $table){
+        $result = $db->query("SELECT * FROM $table");
+        $numColumns = $result->field_count;
+		
+	$return.= 'DROP TABLE IF EXISTS `'.$table.'`;';
+	
+        $result2 = $db->query("SHOW CREATE TABLE $table");
+        $row2 = $result2->fetch_row();
+
+        $return .= "\n\n".$row2[1].";\n\n";
+
+        for($i = 0; $i < $numColumns; $i++) { 
+            while($row = $result->fetch_row()) { 
+                $return .= "INSERT INTO $table VALUES(";
+                for($j=0; $j < $numColumns; $j++) { 
+                    $row[$j] = addslashes($row[$j]);
+                    $row[$j] = $row[$j];
+                    if (isset($row[$j])) { 
+                        $return .= '"'.$row[$j].'"' ;
+                    } else { 
+                        $return .= '""';
+                    }
+                    if ($j < ($numColumns-1)) {
+                        $return.= ',';
+                    }
+                }
+                $return .= ");\n";
+            }
+        }
+
+        $return .= "\n-- ------------------------------------------------ \n\n";
+    }
+
 	if ($compression) {
 	$zp = gzopen($filename = $filename.'.sql.gz', "a9");
-	} else {
-	$handle = fopen($filename = $filename.'.sql','a+');
-	}
-
-	$numtypes=array('tinyint','smallint','mediumint','int','bigint','float','double','decimal','real');
-
-	// list all of the tables
-	$pstm1 = $pdo->query('SHOW TABLES');
-	while ($row = $pstm1->fetch(PDO::FETCH_NUM)) {
-	$tables[] = $row[0];
-	}
-
-	//cycle through the table(s)
-
-	foreach($tables as $table) {
-	$result = $pdo->query("SELECT * FROM $table");
-	$num_fields = $result->columnCount();
-	$num_rows = $result->rowCount();
-
-	$return="";
-	//uncomment below if you want 'DROP TABLE IF EXISTS' displayed
-	$return.= 'DROP TABLE IF EXISTS `'.$table.'`;';
-
-	//table structure
-	$pstm2 = $pdo->query("SHOW CREATE TABLE $table");
-	$row2 = $pstm2->fetch(PDO::FETCH_NUM);
-	$ifnotexists = str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $row2[1]);
-	$return.= "\n\n".$ifnotexists.";\n\n";
-
-	if ($compression) {
-	gzwrite($zp, $return);
-	} else {
-	fwrite($handle,$return);
-	}
-	$return = "";
-
-	//insert values
-	if ($num_rows){
-	$return= 'INSERT INTO `'."$table"."` (";
-	$pstm3 = $pdo->query("SHOW COLUMNS FROM $table");
-	$count = 0;
-	$type = array();
-
-	while ($rows = $pstm3->fetch(PDO::FETCH_NUM)) {
-
-	if (stripos($rows[1], '(')) {$type[$table][] = stristr($rows[1], '(', true);
-	} else $type[$table][] = $rows[1];
-
-	$return.= "`".$rows[0]."`";
-	$count++;
-	if ($count < ($pstm3->rowCount())) {
-	$return.= ", ";
-	}
-	}
-
-	$return.= ")".' VALUES';
-
-	if ($compression) {
-	gzwrite($zp, $return);
-	} else {
-	fwrite($handle,$return);
-	}
-	$return = "";
-	}
-	$count =0;
-	while($row = $result->fetch(PDO::FETCH_NUM)) {
-	$return= "\n\t(";
-
-	for($j=0; $j<$num_fields; $j++) {
-
-	//$row[$j] = preg_replace("\n","\\n",$row[$j]);
-
-
-	if (isset($row[$j])) {
-
-	//if number, take away "". else leave as string
-	if ((in_array($type[$table][$j], $numtypes)) && (!empty($row[$j]))) $return.= $row[$j] ; else $return.= $pdo->quote($row[$j]);
-
-	} else {
-	$return.= 'NULL';
-	}
-	if ($j<($num_fields-1)) {
-	$return.= ',';
-	}
-	}
-	$count++;
-	if ($count < ($result->rowCount())) {
-	$return.= "),";
-	} else {
-	$return.= ");";
-
-	}
-	if ($compression) {
-	gzwrite($zp, $return);
-	} else {
-	fwrite($handle,$return);
-	}
-	$return = "";
-	}
-	$return="\n\n-- ------------------------------------------------ \n\n";
-	if ($compression) {
-	gzwrite($zp, $return);
-	} else {
-	fwrite($handle,$return);
-	}
-	$return = "";
-	}
-
-	$error1= $pstm2->errorInfo();
-	$error2= $pstm3->errorInfo();
-	$error3= $result->errorInfo();
-	if(!empty($error1[2])){trigger_error( $error1[2] );}
-	if(!empty($error2[2])){trigger_error( $error2[2] );}
-	if(!empty($error3[2])){trigger_error( $error3[2] );}
-
-	if ($compression) {
+	fwrite($zp, $return);
 	gzclose($zp);
 	} else {
+	$handle = fopen($filename = $filename.'.sql','a+');
+	fwrite($handle, $return);
 	fclose($handle);
 	}
 
@@ -185,11 +112,11 @@ function exportDB($compression, $pdo) {
     die(readfile($filename) && unlink($filename));
 }
 
-function importDB($pdo) {
-	if(!clamdscan($_FILES['file']['tmp_name']) && $_FILES['favicon']['error'] == 0){
-		$sql = file_get_contents($_FILES['file']['tmp_name']);
-		$pdo->query($sql);
-	}
+function importDB($tmp, $db) {
+	/*!clamdscan($_FILES['file']['tmp_name']) &&*/ 
+		$sql = file_get_contents($tmp);
+		$db->multi_query($sql);
+	
 }
 // debugging this function? some things to check
 // - writeable upload_tmp_dir
@@ -197,6 +124,7 @@ function importDB($pdo) {
 // on apache, ensure www-data has write access (or whatever your webserver user is)
 // - file_uploads=On in php.ini
 // - upload_max_filesize set high enough
+// - var_dump() in steps through code to see whats happening
 function uploadImages() {
 
     // File upload configuration 

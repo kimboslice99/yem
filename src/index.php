@@ -10,6 +10,13 @@ if(!file_exists(__DIR__ . '/views/bin/config.ini')){
 } else {
 	$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
 }
+// ============ CHECK FOR REQUIRED EXTENSIONS ========== //
+(!extension_loaded('curl'))?die('curl missing!'):''; // Shipping calc
+(!extension_loaded('imagick'))?die('imagick missing!'):''; // image manipulation
+(!extension_loaded('openssl'))?die('openssl missing!'):''; // csrf tokens
+(!extension_loaded('zlib'))?die('zlib missing!'):''; // gzopen() gzwrite() gzclose()
+(!extension_loaded('session'))?die('session missing!'):''; // duh
+(!extension_loaded('mysqli'))?die('mysqli missing!'):''; // cuurently only import + export DB... also Session2DB if enabled
 // =============== SECURING COOKIES  - most of these get set by Session2DB if youre using that but in case you arent =============== // 
 ini_set('session.cookie_httponly', '1'); // Prevent javascript access
 ini_set('session.use_only_cookies', '1'); // prevents attacks involved passing session ids in URLs. 
