@@ -10,6 +10,7 @@ E-commerce web application built using php routing. Instead of relying on the we
 - Update profile
 - Order history
 - CSRF protection
+- AbuseIPDB Integration
 - Input sanitisation
 - Sends invoice to user's email using ([PHPMailer](https://github.com/PHPMailer/PHPMailer))
 - Livechat ([intercom](https://intercom.com))
