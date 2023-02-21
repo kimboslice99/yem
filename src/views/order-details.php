@@ -1,7 +1,7 @@
 <?php
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 
 if(!isset($_SESSION['name'])) {
     header('Location: /login');
@@ -12,12 +12,14 @@ if(!isset($_GET['id'])) {
 }
 
 $details;
-$statement = $pdo->prepare("SELECT * FROM transactions WHERE id=? AND email=?");
-$statement->execute(array(filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT), $_SESSION['email']));
-if($statement->rowCount() > 0) {
-    $transaction = $statement->fetchAll(PDO::FETCH_ASSOC);
-    $details = unserialize($transaction[0]['details']);
-    $payment_details = unserialize($transaction[0]['payment_details']);
+$statement = $mysqli->prepare("SELECT * FROM transactions WHERE id=? AND email=?");
+$statement->bind_param('is', filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT), $_SESSION['email']);
+$statement->execute();
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	$assoc = $result->fetch_assoc();
+    $details = unserialize($assoc['details']);
+    $payment_details = unserialize($assoc['payment_details']);
 }
 if(empty($config['tax'])){
 	$tax = 0;
@@ -50,7 +52,14 @@ $c = $config['currency_symbol'];
                                         <td><?= $c.number_format($detail['price'], 2) ?></td>
                                         <td><?= $detail['quantity'] ?></td>
                                         <td><?= $c.number_format($detail['price'] * $detail['quantity'], 2) ?></td>
-                                        <td><?= $c.number_format($detail['price'] * $detail['quantity'] + $detail['price'] * $detail['quantity'] * 5 / 100 + $detail['price'] * $detail['quantity'] * 8 / 100, 2) ?></td>
+                                        <td><?php
+                                        $total = $detail['price'] * $detail['quantity'];
+										$taxed = 0;
+										foreach(explode(',', $tax) as $rate) {
+											$taxed += tax($total, $rate);
+										}
+										echo $c.number_format(bcadd($total, $taxed, 2), 2);
+                                    ?></td>
                                     </tr>
                                 <?php endforeach; ?>
 								<tr>
@@ -99,7 +108,7 @@ $c = $config['currency_symbol'];
 								<tr>
 									<td><?= $payment_details['method'] . ' ' . $payment_details["shippingcost"] ?></td>
 									<td></td>
-									<td><?= $transaction[0]['readable_orderstatus'] ?></td>
+									<td><?= $assoc['readable_orderstatus'] ?></td>
 								</tr>
 							</tbody>
 						</table>

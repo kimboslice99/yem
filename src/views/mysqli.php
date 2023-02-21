@@ -1,10 +1,10 @@
 <?php
 
 $config = parse_ini_file(__DIR__ . '/bin/config.ini');
-mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ERROR );
-
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 try {
 	$mysqli = new mysqli($config['db_host'], $config['db_user'], $config['db_password'], $config['db_name'], $config['db_port']);
+	$mysqli->set_charset("utf8mb4");
 } catch( mysqli_sql_exception $exception ) {
 	trigger_error("Connection error :" . $exception);
 	?><!DOCTYPE html>

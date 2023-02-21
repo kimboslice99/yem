@@ -1,7 +1,7 @@
 <?php 
 
 require __DIR__ . '/../csrf.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 require __DIR__ . '/admin/util.php';
 require __DIR__ . '/abuseipdb.php';
 
@@ -28,31 +28,30 @@ if(isset($_POST['register']) && CSRF::validateToken(filter_input(INPUT_POST, 'to
   $address = filter_input(INPUT_POST, 'address');
   $password = password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT);
   $createdTime = time();
-  $statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
-  $statement->execute(array($email));
-  if($statement->rowCount() > 0) {$error=true && array_push($errormsg, 'E-Mail in use!<br>') && $state[2]='is-invalid';}// email exists in database/user already signed up
+  $statement = $mysqli->prepare("SELECT * FROM users WHERE email=?");
+  $statement->bind_param('s', $email);
+  $statement->execute();
+  $result = $statement->get_result();
+  if($statement->affected_rows > 0) {$error=true && array_push($errormsg, 'E-Mail in use!<br>') && $state[2]='is-invalid';}// email exists in database/user already signed up
   if($error === false) {
-		$statement = $pdo->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
-		$statement->execute(array($firstname, $lastname, $email, $phone, $address, $password, $createdTime));
-
-		sendEmail(array($email), "Welcome!", "Thanks for registering!", false, null, null);
-		session_start();
-		$_SESSION['name'] = $lastname . ' ' . $firstname;
-		$_SESSION['email'] = $email;
-		$_SESSION['phone'] = $phone;
-		$_SESSION['address'] = $address;
-		$_SESSION['created-time'] = $createdTime;
-		header('Location: /');
+		$statement = $mysqli->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
+		$statement->bind_param('sssssss', $firstname, $lastname, $email, $phone, $address, $password, $createdTime);
+		$statement->execute();
+		$result = $statement->get_result(); // for whatever reason we have to do statement->get_result in order to get affected_rows
+		if($statement->affected_rows > 0) {
+			sendEmail(array($email), "Welcome!", "Thanks for registering!", false, null, null);
+			$_SESSION['name'] = $lastname . ' ' . $firstname;
+			$_SESSION['email'] = $email;
+			$_SESSION['phone'] = $phone;
+			$_SESSION['address'] = $address;
+			$_SESSION['created-time'] = $createdTime;
+			header('Location: /');
+		} else {
+			$error = true && array_push($errormsg, 'Error occurred, please report');
+		}
   }
 }
 
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('appid'));
-$appid = $statement->fetchAll();
-
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('description'));
-$description = $statement->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -62,12 +61,12 @@ $description = $statement->fetchAll();
   <!-- Basic Page Needs
   ================================================== -->
   <meta charset="utf-8">
-  <title><?= $appid[0]['value'] ?></title>
+  <title><?= $config['title'] ?></title>
 
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="<?= $description[0]['value'] ?>">
+  <meta name="description" content="<?= $config['description'] ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   
   <!-- Favicon -->
@@ -103,7 +102,7 @@ $description = $statement->fetchAll();
         <div class="">
             <div class="block text-center">
             <a href="/">
-					<img class="logo-h" src="/views/images/logo.jpg" alt="Logo">
+					<img class="logo-h" src="/images/logo.jpg" alt="Logo">
             </a>
             <form class="text-left clearfix requires-validation" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" novalidate>
                 <?= CSRF::csrfInputField() ?>

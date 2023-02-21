@@ -56,12 +56,6 @@ if(isset($_POST['reset']) && CSRF::validateToken(filter_input(INPUT_POST, 'token
 		$errorcode = 4;
 	}
 }
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('appid'));
-$appid = $statement->fetchAll();
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('description'));
-$description = $statement->fetchAll();
 $csrf = CSRF::csrfInputField();
 ?>
 
@@ -72,12 +66,12 @@ $csrf = CSRF::csrfInputField();
   <!-- Basic Page Needs
   ================================================== -->
   <meta charset="utf-8">
-  <title><?= $appid[0]['value'] ?> | Reset Password</title>
+  <title><?= $config['title'] ?> | Reset Password</title>
 
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="<?= $description[0]['value'] ?>">
+  <meta name="description" content="<?= $config['title'] ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   
   <!-- Favicon -->

@@ -23,7 +23,7 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
 		$statement = $pdo->prepare("UPDATE users SET code=?, expiration=? WHERE email=?");
 		$statement->execute(array($code, $expirationTime, $email));
 		if($statement->rowCount() > 0) {
-			sendEmail(array($email), "Password Reset", "Reset code: ". $code . "\n\nIf you didn't request for a password reset, ignore this message.", false, null);
+			sendEmail(array($email), "Password Reset", "Reset code: ". $code . "\n\nIf you didn't request for a password reset, ignore this message.", false, null, null);
 			header('Location: /reset?email='. $email);
 		} else {
 			$success = false;

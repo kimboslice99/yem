@@ -1,16 +1,20 @@
 <?php 
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 
 if(!isset($_SESSION['name'])) {
   header('Location: /login');
 }
-
-$orders;
-$statement = $pdo->prepare("SELECT * FROM transactions WHERE email=? ORDER BY id DESC");
-$statement->execute(array($_SESSION['email']));
-$orders = $statement->fetchAll(PDO::FETCH_ASSOC);
+// create array to push to
+$orders = array();
+$statement = $mysqli->prepare("SELECT * FROM transactions WHERE email=? ORDER BY id DESC");
+$statement->bind_param('s', filter_var($_SESSION['email']));
+$statement->execute();
+$result = $statement->get_result();
+while($assoc = $result->fetch_assoc()){
+	array_push($orders, $assoc);
+}
 if(empty($config['tax'])){
 	$tax = 0;
 }else{

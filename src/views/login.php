@@ -2,7 +2,7 @@
 
 ob_start();
 
-require __DIR__ . '/db.php'; 
+require __DIR__ . '/mysqli.php';
 require __DIR__ . '/admin/util.php';
 require __DIR__ . '/../csrf.php';
 require __DIR__ . '/abuseipdb.php';
@@ -18,19 +18,21 @@ if(isset($_POST['login']) && CSRF::validateToken(filter_input(INPUT_POST, 'token
   if(!AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)){
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
     $password = filter_input(INPUT_POST, 'password');
-    $statement = $pdo->prepare("SELECT * FROM users WHERE email=?");
-    $statement->execute(array($email));
-    if($statement->rowCount() > 0) {
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-        if(password_verify($password, $result[0]['password'])) {
-            $_SESSION['name'] = (string)$result[0]['lastname'] . ' ' . $result[0]['firstname'];
-			$_SESSION['firstname'] = (string)$result[0]['firstname'];
-			$_SESSION['lastname'] = (string)$result[0]['lastname'];
-            $_SESSION['email'] = (string)$result[0]['email'];
-            $_SESSION['phone'] = (string)$result[0]['phone'];
-            $_SESSION['address'] = (string)$result[0]['address'];
-            $_SESSION['created-time'] = (string)$result[0]['created'];
-            $_SESSION['id'] = (string)$result[0]['id'];
+    $statement = $mysqli->prepare("SELECT * FROM users WHERE email=?");
+	$statement->bind_param("s", $email);
+    $statement->execute();
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+        $assoc = $result->fetch_assoc();
+        if(password_verify($password, $assoc['password'])) {
+            $_SESSION['name'] = (string)$assoc['lastname'] . ' ' . $assoc['firstname'];
+			$_SESSION['firstname'] = (string)$assoc['firstname'];
+			$_SESSION['lastname'] = (string)$assoc['lastname'];
+            $_SESSION['email'] = (string)$assoc['email'];
+            $_SESSION['phone'] = (string)$assoc['phone'];
+            $_SESSION['address'] = (string)$assoc['address'];
+            $_SESSION['created-time'] = (string)$assoc['created'];
+            $_SESSION['id'] = (string)$assoc['id'];
             header('Location: /');
         } else {
         $error = true;
