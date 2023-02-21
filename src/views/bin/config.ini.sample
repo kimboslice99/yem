@@ -50,6 +50,9 @@ description="description"
 meta_image=""
 # currency
 currency_symbol="$"
+# timezone - https://www.php.net/manual/en/timezones.php
+timezone="GMT"
+
 
 [contact]
 # Physical address

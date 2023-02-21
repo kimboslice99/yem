@@ -14,8 +14,9 @@ if(!file_exists(__DIR__ . '/views/bin/config.ini')){
 ini_set('session.cookie_httponly', '1'); // Prevent javascript access
 ini_set('session.use_only_cookies', '1'); // prevents attacks involved passing session ids in URLs. 
 ini_set('session.use_strict_mode', '1'); // Rejects uninitialized session IDs
-//ini_set('session.cookie_secure', '1'); // https only
-//ini_set('session.cookie_domain', '192.168.1.5'); // domain
+if(isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1)
+	|| isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'){ini_set('session.cookie_secure', '1');} // https only
+ini_set('session.cookie_domain', $_SERVER['HTTP_HOST']); // domain
 ini_set('session.use_trans_sid', '0'); // disabling transparent session ID management improves the general session ID security by eliminating the possibility of a session ID injection and/or leak.
 ini_set('session.sid_bits_per_character', '6'); // specify the number of bits in encoded session ID character. '4', '5', and '6' The more bits results in stronger session ID.
 ini_set('session.sid_length', '96'); // Session ID length can be between 22 to 256. Longer session ID is harder to guess
@@ -25,7 +26,7 @@ ini_set('session.save_path', __DIR__ . '/views/bin'); // know where your session
 // 
 session_name($config['session_name']);
 
-date_default_timezone_set('America/Toronto');
+date_default_timezone_set($config['timezone']);
 require __DIR__ . '/views/session.php';
 // If Session2DB not setup we start native php session
 if(session_status() !== PHP_SESSION_ACTIVE) session_start();
