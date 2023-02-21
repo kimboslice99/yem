@@ -33,6 +33,11 @@ $statement->execute();
 if($statement->rowCount() > 0) {
     $transactions = $statement->fetchAll(PDO::FETCH_ASSOC);
 }
+if(empty($config['tax'])){
+	$tax = 0;
+}else{
+	$tax = $config['tax'];
+}
 $csrf = CSRF::csrfInputField();
 ?>
 <div class="container">
@@ -74,6 +79,7 @@ $csrf = CSRF::csrfInputField();
                                             <?php
                                                 $details = unserialize($transaction['details']);
                                                 $total = 0;
+												$taxed = 0;
                                                 $subtotal = 0;
                                                 foreach($details as $detail) {
                                                     echo '<tr>';
@@ -84,14 +90,17 @@ $csrf = CSRF::csrfInputField();
                                                     echo '<td>$' . number_format($detail['price'] * $detail['quantity'] + $detail['price'] * $detail['quantity'] * 5 / 100 + $detail['price'] * $detail['quantity'] * 8 / 100, 2) . '</td>';
                                                     echo '</tr>';
 													$subtotal += $detail['price'] * $detail['quantity'];
-                                                    $total += $detail['price'] * $detail['quantity'] + $detail['price'] * $detail['quantity'] * 5 / 100 + $detail['price'] * $detail['quantity'] * 8 / 100;
+                                                    $total += $detail['price'] * $detail['quantity'];
+													foreach(explode(',', $tax) as $rate) {
+														$taxed += tax($total, $rate);
+													}
                                                 }
                                                 echo '<tr>';
                                                 echo '<td>Total</td>';
                                                 echo '<td></td>';
                                                 echo '<td></td>';
                                                 echo '<td>$' . number_format($subtotal, 2) . '</td>';
-                                                echo '<td>$' . number_format($total, 2) . '</td>';
+                                                echo '<td>$' . number_format($taxed, 2) . '</td>';
                                                 echo '</tr>';
                                             ?>
                                         </tbody>

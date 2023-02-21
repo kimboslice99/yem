@@ -11,15 +11,11 @@ $orders;
 $statement = $pdo->prepare("SELECT * FROM transactions WHERE email=? ORDER BY id DESC");
 $statement->execute(array($_SESSION['email']));
 $orders = $statement->fetchAll(PDO::FETCH_ASSOC);
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('tax_rates'));
-if($statement->rowCount() > 0) {
-	$tax_rates = $statement->fetchAll();
-	if (empty($tax_rates[0]['value'])){
-		$tax_rates = 0;
-	}
+if(empty($config['tax'])){
+	$tax = 0;
+}else{
+	$tax = $config['tax'];
 }
-
 ?>
 <section class="user-dashboard page-wrapper">
 	<div class="container">
@@ -51,7 +47,7 @@ if($statement->rowCount() > 0) {
                                         $total += $detail['price'] * $detail['quantity'];
                                     }
 									$taxed = 0;
-									foreach(explode(',', $tax_rates[0]['value']) as $rate) {
+									foreach(explode(',', $tax) as $rate) {
 										$taxed += tax($total, $rate);
 									}
 									echo number_format(bcadd($total, $taxed, 2), 2);

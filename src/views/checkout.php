@@ -39,16 +39,18 @@ foreach($_SESSION['cart'] as $item) {
 // ============= IF CART EMPTY ========== //
 if($total == 0 && empty($_SESSION['method']) || empty($_SESSION['shipping'])) { header('Location: /'); }
 // ============= TAXES =============== //
-if (empty($config['tax'])){
-	$tax_rates = 0;
+if(empty($config['tax'])){
+	$tax = 0;
+}else{
+	$tax = $config['tax'];
 }
-foreach(explode(',', $config['tax']) as $rate) {
+foreach(explode(',', $tax) as $rate) {
 	$taxed += tax($total, $rate);
 }
 $total = bcadd($total, $taxed, 2);
 // ============== IF SUBMIT ================== //
-if(isset($_POST['payment_method_nonce']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))){
-// ============= CREATE SALE ============== // 
+if(isset($_POST['payment_method_nonce']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)){
+// ============= CREATE SALE ============== //
 $result = $gateway->transaction()->sale([
   'amount' => bcadd($total, filter_var($_SESSION['shipping']), 2),
   'paymentMethodNonce' => filter_input( INPUT_POST, 'payment_method_nonce' ),

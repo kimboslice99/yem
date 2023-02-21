@@ -19,13 +19,10 @@ if($statement->rowCount() > 0) {
     $details = unserialize($transaction[0]['details']);
     $payment_details = unserialize($transaction[0]['payment_details']);
 }
-$statement = $pdo->prepare("SELECT * FROM app_settings WHERE name=?");
-$statement->execute(array('tax_rates'));
-if($statement->rowCount() > 0) {
-	$tax_rates = $statement->fetchAll();
-	if (empty($tax_rates[0]['value'])){
-		$tax_rates = 0;
-	}
+if(empty($config['tax'])){
+	$tax = 0;
+}else{
+	$tax = $config['tax'];
 }
 $c = $config['currency_symbol'];
 ?>
@@ -81,7 +78,7 @@ $c = $config['currency_symbol'];
                                             $total += $detail['price'] * $detail['quantity'];
                                         }
 										$taxed = 0;
-										foreach(explode(',', $tax_rates[0]['value']) as $rate) {
+										foreach(explode(',', $tax) as $rate) {
 											$taxed += tax($total, $rate);
 										}
 										echo $c.number_format(bcadd(bcadd($total, $payment_details["shippingcost"], 2), $taxed, 2), 2);
