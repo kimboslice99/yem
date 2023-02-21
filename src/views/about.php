@@ -25,16 +25,18 @@ $about = $statement->fetchAll(PDO::FETCH_ASSOC);
                         <i class="tf-ion-ios-home"></i>
                         <span><?= htmlspecialchars($config['address']) ?></span>
                     </li>
-					<?php if(!empty($phone)): ?>
+					<?php if(!empty($config['contact_phone'])): ?>
                     <li>
                         <i class="tf-ion-android-phone-portrait"></i>
                         <span>Phone: <?= htmlspecialchars($config['contact_phone']) ?></span>
                     </li>
 					<?php endif ?>
+					<?php if(!empty($config['contact_email'])): ?>
                     <li>
                         <i class="tf-ion-android-mail"></i>
                         <span>Email: <?= htmlspecialchars($config['contact_email']) ?></span>
                     </li>
+					<?php endif ?>
                 </ul>
                 <!-- Footer Social Links -->
                 <div class="social-icon">
