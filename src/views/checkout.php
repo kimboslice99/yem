@@ -79,7 +79,9 @@ $transactionSuccessStatuses = [
 ];
 // =================== CATCH ERRORS ============== //
 if (!$result->success) {
-file_put_contents(__DIR__ . '/bin/payment_error.log', date('Y-m-d H:i:s') . ' ' . $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR'] . "\n", FILE_APPEND|LOCK_EX);
+
+trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
+
 die(json_encode(array(
 	'status' => $transaction->status,
 	// "processor_declined"
@@ -91,6 +93,9 @@ die(json_encode(array(
 
 
 if (!$result->transaction) {
+	
+trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
+	
 die(json_encode(array(
 	'status' => $transaction->status,
 	// "processor_declined"
@@ -106,7 +111,7 @@ if (!in_array($transaction->status, $transactionSuccessStatuses)) {
 	foreach($result->errors->deepAll() as $error) {
 		$errorString .= 'Error: ' . $error->code . ": " . $error->message . "\n";
 	}
-	file_put_contents(__DIR__ . '/bin/payment_error.log', date('Y-m-d H:i:s') . ' ' . $errorString . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR'] ."\n", FILE_APPEND|LOCK_EX);
+	trigger_error( $errorString . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
 	die(json_encode(array(
 		'status' => 'Payment error',
 		

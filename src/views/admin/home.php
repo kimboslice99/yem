@@ -7,7 +7,8 @@ require __DIR__ . '/util.php';
 require __DIR__ . '/../abuseipdb.php';
 
 if(isset($_POST['export']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
-    exportDB($config['db_host'], $config['db_name'], $config['db_user'], $config['db_password']);
+	(isset($_POST['compression']))?$compression = true:$compression=false;
+    exportDB($compression, $pdo);
 }
 
 if(isset($_POST['import']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
@@ -236,6 +237,8 @@ $csrf = CSRF::csrfInputField();
                                     <form action="/admin/home" method="post">
                                         <?= $csrf ?>
                                         <button name="export" type="submit" class="btn btn-primary mb-2"><i class="fas fa-file-export"></i> Export</button>
+										<label class="form-label">Compression?</label>
+										<input type="checkbox" name="compression" value="true">
                                     </form>
                                 </div>
                             </div>

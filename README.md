@@ -23,7 +23,7 @@ E-commerce web application built using php routing. Instead of relying on the we
 - Image magic bytes verification
 - Upload scanning via ClamAV (if enabled) ([ClamAV](https://www.clamav.net/))
 - Create or select product category
-- Export/Import database
+- Export/Import database (Export now has compression and is written in PDO rather than mysqli)
 - Last 7 days sales and revenue stats using Chartjs
 - Modify contact details and privacy policy
 - Send email to users ([PHPMailer](https://github.com/PHPMailer/PHPMailer))
@@ -33,7 +33,7 @@ E-commerce web application built using php routing. Instead of relying on the we
 - Execute [db.sql](src/db.sql)
 - Ensure webserver has full access to folder (IIS_IUSRS)
 - Enter database config [config.ini](src/views/bin/config.ini.sample)
-- enable php extensions (imagick, curl, pdo_mysql, mysqli, openssl)
+- enable php extensions (imagick, curl, pdo_mysql, openssl)
 
 ## Admin Credentials
 ```
