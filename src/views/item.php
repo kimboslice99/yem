@@ -123,7 +123,7 @@ header("Content-Security-Policy: default-src 'none';connect-src 'self';script-sr
                         <h2><?= $item[0]['title'] ?></h2>
                         <?= CSRF::csrfInputField() ?>
                         <input type="text" name="title" value="<?= $item[0]['title'] ?>" hidden>
-                        <p class="product-price">CAD$<?= number_format($item[0]['price'], 2) ?></p>
+                        <p class="product-price"><?= $config['currency_symbol'].number_format($item[0]['price'], 2) ?></p>
                         <input type="text" name="price" value="<?= $item[0]['price'] ?>" hidden>
                         <input type="text" name="weight" value="<?= $item[0]['weight'] ?>" hidden>
                         <input type="text" name="image" value="<?= (!empty(unserialize($item[0]['images'])[0]))?unserialize($item[0]['images'])[0]:'/images/noimg.jpg'; ?>" hidden>

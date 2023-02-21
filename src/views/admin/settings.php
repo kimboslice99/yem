@@ -56,6 +56,15 @@ if(isset($_POST['app-submit']) && CSRF::validateToken(filter_input(INPUT_POST, '
 	if(isset($_POST['tax_rates'])) {
 		config('tax', filter_input(INPUT_POST, 'tax_rates'));
 	}
+	if(isset($_POST['currency_symbol'])) {
+		config('currency_symbol', filter_input(INPUT_POST, 'currency_symbol'));
+	}
+	if(isset($_POST['clam_path'])) {
+		config('clam_path', filter_input(INPUT_POST, 'clam_path'));
+	}
+	if(isset($_POST['clam_config_path'])) {
+		config('clam_config_path', filter_input(INPUT_POST, 'clam_config_path'));
+	}
 	if(isset($_FILES['files']) && $_FILES["files"]["error"][0] == 0) {
 		if(!empty($config['meta_image'])) { unlink(__DIR__ . '/../../' . $config['meta_image']); }
 		$img = uploadImages();
@@ -94,6 +103,9 @@ if(isset($_POST['app-submit']) && CSRF::validateToken(filter_input(INPUT_POST, '
 }
 
 if(isset($_POST['bt-submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
+	if(isset($_POST['bt_autoloader'])) {
+		config('bt_autoloader', filter_input(INPUT_POST, 'bt_autoloader'));
+	}
 	if(isset($_POST['environment'])) {
 		config('environment', filter_input(INPUT_POST, 'environment'));
 	}
@@ -276,9 +288,27 @@ $csrf = CSRF::csrfInputField();
                                     <?= (empty(AbuseIPDB::GetKey())) ? '<p class="font-14 text-danger text-center">AbuseIPDB Disabled!</p>':'<p class="font-14 text-success text-center">AbuseIPDB Enabled!</p>'; ?>
                             </div>
                             <div class="mb-3">
+								<label class="form-label font-10">ClamAV - enter full clamdscan path here</label>
+                                <div class="input-group mb-3">
+                                    <input type="text" name="clam_path" class="form-control" placeholder="/path/to" value="<?= $config['clam_path'] ?>">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+								<label class="form-label font-10">ClamAV config path - sample in bin</label>
+                                <div class="input-group mb-3">
+                                    <input type="text" name="clam_config_path" class="form-control" placeholder="/config/path" value="<?= $config['clam_config_path'] ?>">
+                                </div>
+                            </div>
+                            <div class="mb-3">
 								<label class="form-label font-10">Tax rates, comma seperated for multiple</label>
                                 <div class="input-group mb-3">
                                     <input type="text" name="tax_rates" class="form-control" placeholder="3,5" value="<?= $config['tax'] ?>">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+								<label class="form-label font-10">Currency Symbol</label>
+                                <div class="input-group mb-3">
+                                    <input type="text" name="currency_symbol" class="form-control" placeholder="$" value="<?= $config['currency_symbol'] ?>">
                                 </div>
                             </div>
 							<div class="mb-3">
@@ -312,6 +342,12 @@ $csrf = CSRF::csrfInputField();
                     <div class="col-md-8">
                         <form action="<?= $_SERVER['REQUEST_URI'] ?>" method="post" class="requires-validation" novalidate>
                             <?= $csrf ?>
+                            <div class="mb-3">
+								<label class="form-label font-10">Braintree autoloader path</label>
+                                <div class="input-group mb-3">
+                                    <input type="text" name="bt_autoloader" class="form-control" placeholder="/path/to" value="<?= $config['bt_autoloader'] ?>" required>
+                                </div>
+                            </div>
                             <div class="mb-3">
 								<label class="form-label font-10">Environment</label>
                                 <div class="input-group mb-3">

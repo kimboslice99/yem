@@ -13,11 +13,13 @@ E-commerce web application built using php routing. Instead of relying on the we
 - AbuseIPDB Integration
 - Input sanitisation
 - Sends invoice to user's email using ([PHPMailer](https://github.com/PHPMailer/PHPMailer))
+- Canada Post shipping calculator (a better calculator coming soon)
+- Braintree integration
 - Livechat ([intercom](https://intercom.com))
     #### Admin Panel
 - Create, modify and delete products, customers and faq
 - Unlimited product pictures
-- Image compression ([php_imagick](https://www.php.net/manual/en/book.imagick.php))
+- Image manipulation ([php_imagick](https://www.php.net/manual/en/book.imagick.php))
 - Image magic bytes verification
 - Upload scanning via ClamAV (if enabled) ([ClamAV](https://www.clamav.net/))
 - Create or select product category

@@ -1,8 +1,8 @@
 <?php
 
 require __DIR__ . '/../db.php';
-require __DIR__ . '/../plugins/bt/lib/autoload.php';
 $config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+require $config['bt_autoloader'];
 $gateway = new Braintree\Gateway([
     'environment' => $config['environment'],
     'merchantId' => $config['merchantid'],
