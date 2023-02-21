@@ -105,7 +105,7 @@ function exportDB($host, $name, $user, $password) {
 }
 
 function importDB($pdo) {
-	if(!clamdscan($_FILES['file']['tmp_name'])){
+	if(!clamdscan($_FILES['file']['tmp_name']) && $_FILES['favicon']['error'] == 0){
 		$sql = file_get_contents($_FILES['file']['tmp_name']);
 		$pdo->query($sql);
 	}

@@ -71,7 +71,7 @@ if(isset($_POST['app-submit']) && CSRF::validateToken(filter_input(INPUT_POST, '
 		fclose($handle);
 		if(!in_array($bytes, array('FFD8FFE0'))) { $error = true; }
 		if(!$error){
-			move_uploaded_file($_FILES['logo']['tmp_name'], __DIR__ .'/../images/logo.jpg');
+			move_uploaded_file($_FILES['logo']['tmp_name'], __DIR__ .'/../../images/logo.jpg');
 			//compressImage($_FILES["logo"]["tmp_name"], __DIR__ .'/../images/logo.jpg', 75, 600, 1500, 'transparent');
 		}
 	}
@@ -209,14 +209,14 @@ $csrf = CSRF::csrfInputField();
                                 <div class="input-group mb-3">
                                     <span class="input-group-text" id="basic-addon1"><i class="fas fa-phone"></i></span>
                                     <input type="tel" name="phone" class="form-control" value="<?= $config['contact_phone'] ?>">
-                                    <input name="ph-id" value="<?= $contact['contact_phone'] ?>" hidden>
+                                    <input name="ph-id" value="<?= $config['contact_phone'] ?>" hidden>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text" id="basic-addon1"><b>f</b></span>
                                     <input type="text" name="facebook" class="form-control" value="<?= $config['contact_facebook'] ?>">
-                                    <input name="fb-id" value="<?= $contact['contact_facebook'] ?>" hidden>
+                                    <input name="fb-id" value="<?= $config['contact_facebook'] ?>" hidden>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -283,7 +283,7 @@ $csrf = CSRF::csrfInputField();
 								<label class="form-label font-10">Meta property og:image</label>
 							  <div class="input-group">
 								<input class="form-control h-25" name="files[]" type="file" id="formFile1">
-<?php if(!empty($config['image'])): ?><img width="55" height="55" src="/<?= $config['image'] ?>"><?php endif ?>
+<?php if(!empty($config['meta_image'])): ?><img width="55" height="55" src="/<?= $config['meta_image'] ?>"><?php endif ?>
 							  </div>
 							</div>
 							<div class="mb-3">
