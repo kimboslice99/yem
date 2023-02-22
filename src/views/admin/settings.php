@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/../abuseipdb.php';
 require __DIR__ . '/util.php';
@@ -8,13 +8,19 @@ require __DIR__ . '/util.php';
 $error = false;
 
 if(isset($_POST['policy-submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
-    $statement = $pdo->prepare("UPDATE policy SET policy=? WHERE id=?");
-    $statement->execute(array(filter_input(INPUT_POST, 'policy'), 1));
+	$policy = filter_input(INPUT_POST, 'policy');
+	$id = 1;
+    $statement = $mysqli->prepare("UPDATE policy SET policy=? WHERE id=?");
+	$statement->bind_param('si', $policy, $id);
+    $statement->execute();
 }
 
 if(isset($_POST['about-submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
-    $statement = $pdo->prepare("UPDATE about SET about=? WHERE id=?");
-    $statement->execute(array(filter_input(INPUT_POST, 'about'), 1));
+	$about = filter_input(INPUT_POST, 'about');
+	$id = 1;
+    $statement = $mysqli->prepare("UPDATE about SET about=? WHERE id=?");
+	$statement->bind_param('si'. $about, $id);
+    $statement->execute();
 }
 
 if(isset($_POST['contact-submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
@@ -145,17 +151,24 @@ if(isset($_POST['smtp-submit']) && CSRF::validateToken(filter_input(INPUT_POST, 
 	}
 }
 
-$statement = $pdo->prepare("SELECT * FROM policy");
+$statement = $mysqli->prepare("SELECT * FROM policy");
 $statement->execute();
-if($statement->rowCount() > 0) {
-$privacyPolicy = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	$privacyPolicy = $result->fetch_assoc();
 } else {
-	$privacyPolicy[0]['policy'] = '';
+	$privacyPolicy['policy'] = '';
 }
 
-$statement = $pdo->prepare("SELECT * FROM about");
+$statement = $mysqli->prepare("SELECT * FROM about");
 $statement->execute();
-$about = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	$about = $result->fetch_assoc();
+} else {
+	$about['about'] = '';
+}
+
 // Reload config, show current values after update
 $config = parse_ini_file(__DIR__ . '/../bin/config.ini');
 $csrf = CSRF::csrfInputField();
@@ -192,7 +205,7 @@ $csrf = CSRF::csrfInputField();
                         <form action="<?= $_SERVER['REQUEST_URI'] ?>" method="post">
                             <?= $csrf ?>
                             <div class="mb-3">
-                                <textarea class="form-control" required rows="20" name="about"><?= $about[0]['about'] ?></textarea>
+                                <textarea class="form-control" required rows="20" name="about"><?= $about['about'] ?></textarea>
                             </div>
                             <div class="mb-3 text-end">
                                 <button name="about-submit" class="btn btn-success" type="submit"><i class="fas fa-check"></i> Update</button>
@@ -258,7 +271,7 @@ $csrf = CSRF::csrfInputField();
                     <p class="text-muted">Copyright &copy;<?= date('Y') ?> Yem-Yem. All rights reserved.</p>
                     <form action="<?= $_SERVER['REQUEST_URI'] ?>" method="post">
                         <?= $csrf ?>
-                        <textarea class="form-control" name="policy" required rows="20"><?= $privacyPolicy[0]['policy'] ?></textarea>            
+                        <textarea class="form-control" name="policy" required rows="20"><?= $privacyPolicy['policy'] ?></textarea>            
                         <div class="mb-3 text-end">
                             <button class="btn btn-success" name="policy-submit" type="submit"><i class="fas fa-check"></i> Update</button>
                         </div>

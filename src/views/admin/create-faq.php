@@ -1,18 +1,18 @@
 <?php
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/../abuseipdb.php';
 
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $question = filter_input(INPUT_POST, 'question');
     $answer = filter_input(INPUT_POST, 'answer');
-    $statement = $pdo->prepare("INSERT INTO faq(question, answer) VALUES (?, ?)");
-    $statement->execute(array($question, $answer));
+    $statement = $mysqli->prepare("INSERT INTO faq(question, answer) VALUES (?, ?)");
+	$statement->bind_param('ss', $question, $answer);
+    $statement->execute();
     header('Location: /admin/faq');
 }
-
 ?>
 <div class="container">
     <div class="row">

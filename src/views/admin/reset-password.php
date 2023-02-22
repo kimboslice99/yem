@@ -1,13 +1,15 @@
 <?php
 
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 
 
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
    $password = password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT);
-   $statement = $pdo->prepare("UPDATE admin SET password=? WHERE username=?");
-   $statement->execute(array($password, 'admin'));
+   $admin = 'admin';
+   $statement = $mysqli->prepare("UPDATE admin SET password=? WHERE username=?");
+   $statement->bind_param('ss', $password, $admin);
+   $statement->execute();
    header('Location: /admin/home');
 }
 

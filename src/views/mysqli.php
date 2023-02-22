@@ -66,5 +66,6 @@ try {
 
   </body>
   </html><?php
+die();
 }
 ?>

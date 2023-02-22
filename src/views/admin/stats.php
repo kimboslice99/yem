@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 
 $days = array();
 $orders = array();
@@ -20,11 +20,9 @@ for($i = 6; $i >= 0; $i--) {
         gmdate('Y-m-d', $time - ($i * 24 * 60 * 60)) . ' 00:00:00 GMT',
         gmdate('Y-m-d', $time - ($i * 24 * 60 * 60)) . ' 22:59:59 GMT',
     );
-    $statement = $pdo->query("SELECT count(*) FROM transactions WHERE timestamp >= '$dateRange[0]' AND timestamp <= '$dateRange[1]'");
-    $orders[] = $statement->fetchColumn();
-    $statement = $pdo->prepare("SELECT * FROM transactions WHERE timestamp >= '$dateRange[0]' AND timestamp <= '$dateRange[1]'");
-    $statement->execute();
-    $transactions = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $statement = $mysqli->query("SELECT count(*) FROM transactions WHERE timestamp >= '$dateRange[0]' AND timestamp <= '$dateRange[1]'");
+    $orders[] = (int)$statement->fetch_assoc()["count(*)"]; // specify INT and php will leave count(*) unquoted
+    $transactions = $mysqli->query("SELECT * FROM transactions WHERE timestamp >= '$dateRange[0]' AND timestamp <= '$dateRange[1]'");
     $transactionRevenue = 0;
     foreach($transactions as $transaction) {
         $details = unserialize($transaction['details']);

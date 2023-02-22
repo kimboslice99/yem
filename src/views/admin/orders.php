@@ -1,7 +1,7 @@
 <?php 
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/util.php';
 require __DIR__ . '/../../csrf.php';
 if (
@@ -21,18 +21,23 @@ if (
 		]);
 	}
 if(isset($_POST['check']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
-  $transaction = $gateway->transaction()->find(filter_input(INPUT_POST, "id"));
-  $status = $transaction->status;
-  $statement = $pdo->prepare("UPDATE transactions SET payment_status=? WHERE payment_id=?");
-  $statement->execute(array(filter_var($status), filter_input(INPUT_POST, 'id')));
+  $id = filter_input(INPUT_POST, 'id');
+  $transaction = $gateway->transaction()->find($id);
+  $status = filter_var($transaction->status);
+  $statement = $mysqli->prepare("UPDATE transactions SET payment_status=? WHERE payment_id=?");
+  $statement->bind_param('ss', $status, $id);
+  $statement->execute();
 }
 
 $transactions;
 
-$statement = $pdo->prepare("SELECT * FROM transactions ORDER BY id DESC");
+$statement = $mysqli->prepare("SELECT * FROM transactions ORDER BY id DESC");
 $statement->execute();
-if($statement->rowCount() > 0) {
-    $transactions = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+if($statement->affected_rows > 0) {
+	while($data = $result->fetch_assoc()){
+		$transactions[] = $data;
+	}
 }
 if(empty($config['tax'])){
 	$tax = 0;

@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/../abuseipdb.php';
 
@@ -9,11 +9,13 @@ $error = false;
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $username = filter_input(INPUT_POST, 'username');
     $password = filter_input(INPUT_POST, 'password');
-    $statement = $pdo->prepare("SELECT * FROM admin WHERE username=?");
-    $statement->execute(array($username));
-    if($statement->rowCount() > 0) {
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-        if(password_verify($password, $result[0]['password'])) {
+    $statement = $mysqli->prepare("SELECT * FROM admin WHERE username=?");
+	$statement->bind_param('s', $username);
+    $statement->execute();
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+        $assoc = $result->fetch_assoc();
+        if(password_verify($password, $assoc['password'])) {
             $_SESSION['admin'] = 'admin';
             header('Location: /admin/home');
         }else{

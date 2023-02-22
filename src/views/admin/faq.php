@@ -2,41 +2,52 @@
 
 require __DIR__ . '/header.php'; 
 require __DIR__ . '/../../csrf.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 
-$data;
+$data = array();
 $edit = false;
 
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     if(isset($_POST['question'])) {
-        $statement = $pdo->prepare("UPDATE faq SET question=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'question'), $id));
+		$q = filter_input(INPUT_POST, 'question');
+        $statement = $mysqli->prepare("UPDATE faq SET question=? WHERE id=?");
+		$statement->bind_param('si', $q, $id);
+        $statement->execute();
     }
     if(isset($_POST['answer'])) {
+		$a = filter_input(INPUT_POST, 'answer');
         $statement = $pdo->prepare("UPDATE faq SET answer=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'answer'), $id));
+		$statement->bind_param('si', $a, $id);
+        $statement->execute();
     }
 }
 
 if(isset($_GET['id'])) {
     $edit = true;
-    $statement = $pdo->prepare("SELECT * FROM faq WHERE id=?");
-    $statement->execute(array(filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT)));
-    if($statement->rowCount() > 0) {
-        $data = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+    $statement = $mysqli->prepare("SELECT * FROM faq WHERE id=?");
+	$statement->bind_param('i', $id);
+    $statement->execute();
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		$data = $result->fetch_assoc();
     }
 } else {
     if(isset($_POST['delete']) && CSRF::validateToken($_POST['token'])) {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-        $statement = $pdo->prepare("DELETE FROM faq WHERE id=?");
-        $statement->execute(array($id));
+        $statement = $mysqli->prepare("DELETE FROM faq WHERE id=?");
+		$statement->bind_param('i', $id);
+        $statement->execute();
     }
     
-    $statement = $pdo->prepare("SELECT * FROM faq");
+    $statement = $mysqli->prepare("SELECT * FROM faq");
     $statement->execute();
-    if($statement->rowCount() > 0) {
-        $data = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		while($assoc = $result->fetch_assoc()){
+			array_push($data, $assoc);
+		}
     }
 }
 $csrf = CSRF::csrfInputField();

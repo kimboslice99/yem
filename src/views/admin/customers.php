@@ -1,59 +1,78 @@
 <?php 
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/../abuseipdb.php';
 
-$customers;
+$customers = array();
 $edit = false;
 
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     if(isset($_POST['firstname'])) {
-        $statement = $pdo->prepare("UPDATE users SET firstname=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'firstname'), $id));
+		$f = filter_input(INPUT_POST, 'firstname');
+        $statement = $mysqli->prepare("UPDATE users SET firstname=? WHERE id=?");
+		$statement->bind_param('si', $f, $id);
+        $statement->execute();
     }
     if(isset($_POST['lastname'])) {
+		$l = filter_input(INPUT_POST, 'lastname');
         $statement = $pdo->prepare("UPDATE users SET lastname=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'lastname'), $id));
+		$statement->bind_param('si', $l, $id);
+        $statement->execute();
     }
     if(isset($_POST['phone'])) {
-        $statement = $pdo->prepare("UPDATE users SET phone=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'phone'), $id));
+		$p = filter_input(INPUT_POST, 'phone');
+        $statement = $mysqli->prepare("UPDATE users SET phone=? WHERE id=?");
+		$statement->bind_param('si', $p, $id);
+        $statement->execute();
     }
     if(isset($_POST['address'])) {
-        $statement = $pdo->prepare("UPDATE users SET address=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'address'), $id));
+		$a = filter_input(INPUT_POST, 'address');
+        $statement = $mysqli->prepare("UPDATE users SET address=? WHERE id=?");
+		$statement->bind_param('si', $a, $id);
+        $statement->execute();
     }
     if(isset($_POST['email'])) {
-        $statement = $pdo->prepare("UPDATE users SET email=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL), $id));
+		$e = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+        $statement = $mysqli->prepare("UPDATE users SET email=? WHERE id=?");
+		$statement->bind_param('si', $e, $id);
+        $statement->execute();
     }
     if(isset($_POST['password'])) {
-        $statement = $pdo->prepare("UPDATE users SET password=? WHERE id=?");
-        $statement->execute(array(password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT), $id));
+		$p = password_hash(filter_input(INPUT_POST, 'password'));
+        $statement = $mysqli->prepare("UPDATE users SET password=? WHERE id=?");
+		$statement->bind_param('si', $p, $id);
+        $statement->execute();
     }
 }
 
 if(isset($_GET['id'])) {
     $edit = true;
-    $statement = $pdo->prepare("SELECT * FROM users WHERE id=?");
-    $statement->execute(array(filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT)));
-    if($statement->rowCount() > 0) {
-        $customers = $statement->fetchAll(PDO::FETCH_ASSOC);
+	$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+    $statement = $mysqli->prepare("SELECT * FROM users WHERE id=?");
+	$statement->bind_param('i', $id);
+    $statement->execute();
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		$customers = $result->fetch_assoc();
     }
 } else {
     if(isset($_POST['delete']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-        $statement = $pdo->prepare("DELETE FROM users WHERE id=?");
-        $statement->execute(array($id));
+        $statement = $mysqli->prepare("DELETE FROM users WHERE id=?");
+		$statement->bind_param('i', $id);
+        $statement->execute();
     }
     
-    $statement = $pdo->prepare("SELECT * FROM users");
+    $statement = $mysqli->prepare("SELECT * FROM users");
     $statement->execute();
-    if($statement->rowCount() > 0) {
-        $customers = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		while($assoc = $result->fetch_assoc()){
+			array_push($customers, $assoc);
+		}
     }
 }
 $csrf = CSRF::csrfInputField();
@@ -72,27 +91,27 @@ $csrf = CSRF::csrfInputField();
                     <?= $csrf ?>
                     <div class="row g-2">
                         <div class="mb-3 col-md-4">
-                            <input type="text" name="firstname" class="form-control" placeholder="Firstname" value="<?= $customers[0]['firstname'] ?>">
+                            <input type="text" name="firstname" class="form-control" placeholder="Firstname" value="<?= $customers['firstname'] ?>">
                         </div>
                         <div class="mb-3 col-md-4">
-                            <input type="text" name="lastname" class="form-control" placeholder="Lastname" value="<?= $customers[0]['lastname'] ?>">
+                            <input type="text" name="lastname" class="form-control" placeholder="Lastname" value="<?= $customers['lastname'] ?>">
                         </div>
                         <div class="mb-3 col-md-4">
-                            <input type="tel" name="phone" class="form-control" placeholder="Phone" value="<?= $customers[0]['phone'] ?>">
+                            <input type="tel" name="phone" class="form-control" placeholder="Phone" value="<?= $customers['phone'] ?>">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <input type="text" class="form-control" name="address" placeholder="Address" value="<?= $customers[0]['address'] ?>">
+                        <input type="text" class="form-control" name="address" placeholder="Address" value="<?= $customers['address'] ?>">
                     </div>
                     <div class="row g-2">
                         <div class="mb-3 col-md-6">
-                            <input type="email" class="form-control" name="email" placeholder="Email" value="<?= $customers[0]['email'] ?>">
+                            <input type="email" class="form-control" name="email" placeholder="Email" value="<?= $customers['email'] ?>">
                         </div>
                         <div class="mb-3 col-md-6">
                             <input type="password" class="form-control" name="password" placeholder="Password">
                         </div>
                     </div>
-                    <input type="text" name="id" value="<?= $customers[0]['id'] ?>" hidden>
+                    <input type="text" name="id" value="<?= $customers['id'] ?>" hidden>
                     <button name="submit" type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
                 </form>
             </div>

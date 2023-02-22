@@ -17,6 +17,8 @@ if(!file_exists(__DIR__ . '/views/bin/config.ini')){
 (!extension_loaded('zlib'))?die('zlib missing!'):''; // gzopen() gzwrite() gzclose()
 (!extension_loaded('session'))?die('session missing!'):''; // duh
 (!extension_loaded('mysqli'))?die('mysqli missing!'):''; // cuurently only import + export DB... also Session2DB if enabled
+(!extension_loaded('bcmath'))?die('bcmath missing!'):''; // math calculations fo taxes
+(!extension_loaded('filter'))?die('filter missing!'):''; // filter inputs
 // =============== SECURING COOKIES  - most of these get set by Session2DB if youre using that but in case you arent =============== // 
 ini_set('session.cookie_httponly', '1'); // Prevent javascript access
 ini_set('session.use_only_cookies', '1'); // prevents attacks involved passing session ids in URLs. 
@@ -32,8 +34,8 @@ ini_set('session.gc_maxlifetime', '3650'); // 3600 = 1 hour
 ini_set('session.save_path', __DIR__ . '/views/bin'); // know where your sessions are stored!
 // 
 session_name($config['session_name']);
-
 date_default_timezone_set($config['timezone']);
+require __DIR__ . '/views/mysqli.php';
 require __DIR__ . '/views/session.php';
 // If Session2DB not setup we start native php session
 if(session_status() !== PHP_SESSION_ACTIVE) session_start();

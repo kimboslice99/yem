@@ -1,7 +1,6 @@
 <?php 
 
 require __DIR__ . '/header.php'; 
-require __DIR__ . '/../db.php';
 require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
@@ -29,9 +28,14 @@ if(isset($_POST['send-email']) && CSRF::validateToken(filter_input(INPUT_POST, '
 	}
     if($_POST['flexRadioDefault'] == 'all') {
         $emails = array();
-        $statement = $pdo->prepare("SELECT * FROM users");
+        $statement = $mysqli->prepare("SELECT * FROM users");
         $statement->execute();
-        $results = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $result = $statement->get_result();
+		if($statement->affected_rows < 0){
+			while($data = $result->fetch_assoc()){
+				array_push($results, $data);
+			}
+		}
         foreach($results as $data) {
             $emails[] = $data['email'];
         }
@@ -42,16 +46,13 @@ if(isset($_POST['send-email']) && CSRF::validateToken(filter_input(INPUT_POST, '
     }
 }
 
-$dateRange = array(
-    gmdate('Y-m-d') . ' 00:00:00 GMT',
-    gmdate('Y-m-d') . ' 22:59:59 GMT'
-);
-$statement = $pdo->query("SELECT count(*) FROM transactions WHERE timestamp >= '$dateRange[0]' AND timestamp <= '$dateRange[1]'");
-$orderCount = $statement->fetchColumn();
+$dateRange0 = date('Y-m-d') . ' 00:00:00 GMT';
+$dateRange1 = date('Y-m-d') . ' 22:59:59 GMT';
+$result = $mysqli->query("SELECT count(*) FROM transactions WHERE timestamp >= '$dateRange0' AND timestamp <= '$dateRange1'");
+$orderCount = $result->fetch_assoc()["count(*)"];
 $revenue = 0;
-$statement = $pdo->prepare("SELECT * FROM transactions WHERE timestamp >= ? AND timestamp <= ?");
-$statement->execute($dateRange);
-$transactions = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+$transactions = $mysqli->query("SELECT * FROM transactions WHERE timestamp >= '$dateRange0' AND timestamp <= '$dateRange1'");
 foreach($transactions as $transaction) {
     $details = unserialize($transaction['details']);
     foreach($details as $detail) {
@@ -59,7 +60,9 @@ foreach($transactions as $transaction) {
     }
 }
 
-$userCount = $pdo->query("SELECT count(*) FROM users")->fetchColumn();
+$result = $mysqli->query("SELECT count(*) FROM users");
+$userCount = $result->fetch_assoc()['count(*)'];
+
 $csrf = CSRF::csrfInputField();
 ?>
 <div class="container">

@@ -1,7 +1,7 @@
 <?php
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
 require __DIR__ . '/../abuseipdb.php';
@@ -13,22 +13,30 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
     $category = filter_input(INPUT_POST, 'category');
     $qty = filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT);
     $weight = filter_input(INPUT_POST, 'w', FILTER_SANITIZE_NUMBER_INT);
-    $statement = $pdo->prepare("SELECT count(*) FROM categories WHERE title=?");
-    $statement->execute(array($category));
-    if(!$statement->fetchColumn() > 0) {
-        $statement = $pdo->prepare("INSERT INTO categories(title) VALUES (?)");
-        $statement->execute(array($category));
+    $statement = $mysqli->prepare("SELECT count(*) FROM categories WHERE title=?");
+	$statement->bind_param('s', $category);
+    $statement->execute();
+	$statement->get_result();
+    if(!$statement->affected_rows > 0) {
+        $statement = $mysqli->prepare("INSERT INTO categories(title) VALUES (?)");
+		$statement->bind_param('s', $category);
+        $statement->execute();
     }
     $paths = serialize(uploadImages());
-    $statement = $pdo->prepare("INSERT INTO products(title, price, description, category, images, qty, weight) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $statement->execute(array($title, $price, $description, $category, $paths, $qty, $weight));
+    $statement = $mysqli->prepare("INSERT INTO products(title, price, description, category, images, qty, weight) VALUES (?, ?, ?, ?, ?, ?, ?)");
+	$statement->bind_param('sdsssii', $title, $price, $description, $category, $paths, $qty, $weight);
+    $statement->execute();
     header('Location: /admin/products');
 }
-
-$statement = $pdo->prepare("SELECT * FROM categories");
+$categories = array();
+$statement = $mysqli->prepare("SELECT * FROM categories");
 $statement->execute();
-$categories = $statement->fetchAll(PDO::FETCH_ASSOC);
-
+$result = $statement->get_result();
+if($statement->affected_rows > 0){
+	while($assoc = $result->fetch_assoc()){
+		array_push($categories, $assoc);
+	}
+}
 ?>
 <div class="container">
     <div class="row">
@@ -77,7 +85,7 @@ $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Images</label>
-                            <input class="form-control" name="files[]" type="file" id="formFile1" multiple required>
+                            <input class="form-control" name="files[]" type="file" id="formFile1" multiple>
                             <small class="text-muted">Select product images</small>
                         </div>
                         <div class="mb-3 text-end">

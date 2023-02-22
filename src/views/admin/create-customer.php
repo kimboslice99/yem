@@ -1,7 +1,8 @@
 <?php
 
 require __DIR__ . '/header.php';
-require __DIR__ . '/../db.php';
+require __DIR__ . '/../mysqli.php';
+require __DIR__ . '/../abuseipdb.php';
 require __DIR__ . '/../../csrf.php';
 
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
@@ -11,9 +12,10 @@ if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'toke
     $phone = filter_input(INPUT_POST, 'phone');
     $address = filter_input(INPUT_POST, 'address');
     $password = password_hash(filter_input(INPUT_POST, 'password'), PASSWORD_DEFAULT);
-  
-    $statement = $pdo->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password) VALUES (?, ?, ?, ?, ?, ?)");
-    $statement->execute(array($firstname, $lastname, $email, $phone, $address, $password));
+	$created = time();
+    $statement = $mysqli->prepare("INSERT INTO users (firstname, lastname, email, phone, address, password, created) VALUES (?, ?, ?, ?, ?, ?, ?)");
+	$statement->bind_param('sssssss', $firstname, $lastname, $email, $phone, $address, $password, $created);
+    $statement->execute();
     header('Location: /admin/customers');
 }
 

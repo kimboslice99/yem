@@ -1,5 +1,4 @@
 <?php
-require __DIR__ . '/db.php';
 
 $fb = $config['contact_facebook'];
 $tw = $config['contact_twitter'];

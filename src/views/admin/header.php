@@ -1,12 +1,11 @@
 <?php 
 
 ob_start();
-require __DIR__ . '/../db.php';
 
 if(!isset($_SESSION['admin'])) {
     header('Location: /admin/login');
 }
-
+$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
 ?>
 <!DOCTYPE html>
 <html lang="en">

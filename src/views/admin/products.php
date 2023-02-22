@@ -1,7 +1,7 @@
 <?php 
 
-require __DIR__ . '/header.php'; 
-require __DIR__ . '/../db.php';
+require __DIR__ . '/header.php';
+require __DIR__ . '/../mysqli.php';
 require __DIR__ . '/../../csrf.php';
 require __DIR__ . '/util.php';
 require __DIR__ . '/../abuseipdb.php';
@@ -14,104 +14,146 @@ $edit = false;
 if(isset($_POST['submit']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     if(isset($_POST['title'])) {
-        $statement = $pdo->prepare("UPDATE products SET title=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'title'), $id));
+		$t = filter_input(INPUT_POST, 'title');
+        $statement = $mysqli->prepare("UPDATE products SET title=? WHERE id=?");
+		$statement->bind_param('si', $t, $id);
+        $statement->execute();
     }
     if(isset($_POST['price'])) {
-        $statement = $pdo->prepare("UPDATE products SET price=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'price'), $id));
+		$p = filter_input(INPUT_POST, 'price');
+        $statement = $mysqli->prepare("UPDATE products SET price=? WHERE id=?");
+		$statement->bind_param('di', $p, $id);
+        $statement->execute();
     }
     if(isset($_POST['description'])) {
-        $statement = $pdo->prepare("UPDATE products SET description=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'description'), $id));
+		$d = filter_input(INPUT_POST, 'description');
+        $statement = $mysqli->prepare("UPDATE products SET description=? WHERE id=?");
+		$statement->bind_param('si', $d, $id);
+        $statement->execute();
     }
     if(isset($_POST['qty'])) {
-        $statement = $pdo->prepare("UPDATE products SET qty=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT), $id));
+		$q = filter_input(INPUT_POST, 'qty', FILTER_SANITIZE_NUMBER_INT);
+        $statement = $mysqli->prepare("UPDATE products SET qty=? WHERE id=?");
+		$statement->bind_param('ii', $q, $id);
+        $statement->execute();
     }
     if(isset($_POST['w'])) {
-        $statement = $pdo->prepare("UPDATE products SET weight=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'w', FILTER_SANITIZE_NUMBER_INT), $id));
+		$w = filter_input(INPUT_POST, 'w', FILTER_SANITIZE_NUMBER_INT);
+        $statement = $mysqli->prepare("UPDATE products SET weight=? WHERE id=?");
+		$statement->bind_param('ii', $w, $id);
+        $statement->execute();
     }
     if(isset($_POST['category'])) {
-        $statement = $pdo->prepare("SELECT * FROM categories WHERE title=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'category')));
-        if(!$statement->rowCount() > 0) {
-            $statement = $pdo->prepare("INSERT INTO categories(title) VALUES (?)");
-            $statement->execute(array(filter_input(INPUT_POST, 'category')));
+		$c = filter_input(INPUT_POST, 'category');
+        $statement = $mysqli->prepare("SELECT * FROM categories WHERE title=?");
+		$statement->bind_param('s', $c);
+        $statement->execute();
+        $statement->get_result();
+        if(!$statement->affected_rows > 0) {
+            $statement = $mysqli->prepare("INSERT INTO categories(title) VALUES (?)");
+			$statement->bind_param('s', $c);
+            $statement->execute();
         }
-        $statement = $pdo->prepare("UPDATE products SET category=? WHERE id=?");
-        $statement->execute(array(filter_input(INPUT_POST, 'category'), $id));
+        $statement = $mysqli->prepare("UPDATE products SET category=? WHERE id=?");
+		$statement->bind_param('si', $c, $id);
+        $statement->execute();
     }
     if(isset($_FILES['files'])) {
 		
-		$statement = $pdo->prepare("SELECT images FROM products WHERE id=?");
-		$statement->execute(array($id));
+		$statement = $mysqli->prepare("SELECT images FROM products WHERE id=?");
+		$statement->bind_param('i', $id);
+		$statement->execute();
+		$result = $statement->get_result();
 		
 		$images = uploadImages();
 		// Add to existing images rather than replace
-		if($statement->rowCount() > 0) {
-		$result = $statement->fetchAll(PDO::FETCH_ASSOC);
-			if (!empty($result[0]['images'])) {
-				foreach(unserialize($result[0]['images']) as $pics) {
+		if($statement->affected_rows > 0) {
+		$assoc = $result->fetch_assoc();
+			if (!empty($assoc['images'])) {
+				foreach(unserialize($assoc['images']) as $pics) {
 					array_push($images, $pics);
 				}
 			}
 		}
         $path = serialize($images);
-        $statement = $pdo->prepare("UPDATE products SET images=? WHERE id=?");
-        $statement->execute(array($path, $id));
+        $statement = $mysqli->prepare("UPDATE products SET images=? WHERE id=?");
+		$statement->bind_param('si', $path, $id);
+        $statement->execute();
     }
 }
 // Delete picture
 if(isset($_POST['delete_pic']) && isset($_POST['id']) && isset($_POST['image']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
     $image = filter_input(INPUT_POST, 'image');
-	$statement = $pdo->prepare("SELECT images FROM products WHERE ID=?");
-	$statement->execute(array($id));
-		if($statement->rowCount() > 0) {
-			 $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-			if (!empty($result[0]['images'])) {
-				$array = unserialize($result[0]['images']);
-				if (($key = array_search($image, $array)) !== false) { // Search the array
-					unlink($array[$key]); //  Delete file
-					unset($array[$key]); // Remove file from array
-				}
-			
-			$statement = $pdo->prepare("UPDATE products SET images=? WHERE id=?");
-			$statement->execute(array(serialize($array), $id));
+	$statement = $mysqli->prepare("SELECT images FROM products WHERE ID=?");
+	$statement->bind_param('i', $id);
+	$statement->execute();
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0) {
+		$assoc = $result->fetch_assoc();
+		if (!empty($assoc['images'])) {
+			$array = unserialize($assoc['images']);
+			if (($key = array_search($image, $array)) !== false) { // Search the array
+				unlink($array[$key]); //  Delete file
+				unset($array[$key]); // Remove file from array
 			}
+		$s = serialize($array);
+		$statement = $mysqli->prepare("UPDATE products SET images=? WHERE id=?");
+		$statement->bind_param('si', $s, $id);
+		$statement->execute();
 		}
+	}
 }
 $error = false;
+$items = array();
+$categories = array();
 // Open Product
 if(isset($_GET['id']) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
     $edit = true;
-    $statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
-    $statement->execute(array(filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT)));
-    if($statement->rowCount() > 0) {
-        $items = $statement->fetchAll(PDO::FETCH_ASSOC);
-    } else { $error = true; }
-    $statement = $pdo->prepare("SELECT * FROM categories");
+	$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+    $statement = $mysqli->prepare("SELECT * FROM products WHERE id=?");
+	$statement->bind_param('i', $id);
     $statement->execute();
-    $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		while($assoc = $result->fetch_assoc()){
+			array_push($items, $assoc);
+		}
+    } else { $error = true; }
+    $statement = $mysqli->prepare("SELECT * FROM categories");
+    $statement->execute();
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		while($assoc = $result->fetch_assoc()){
+			array_push($categories, $assoc);
+		}
+	}
 } else { // Delete product
     if(isset($_POST['delete']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)) {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-        $statement = $pdo->prepare("DELETE FROM products WHERE id=?");
-        $statement->execute(array($id));
+        $statement = $mysqli->prepare("DELETE FROM products WHERE id=?");
+        $statement->bind_param('i', $id);
+        $statement->execute();
     }
     // List products
-    $statement = $pdo->prepare("SELECT * FROM products");
+    $statement = $mysqli->prepare("SELECT * FROM products");
     $statement->execute();
-    if($statement->rowCount() > 0) {
-        $items = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $result = $statement->get_result();
+    if($statement->affected_rows > 0) {
+		while($assoc = $result->fetch_assoc()){
+			array_push($items, $assoc);
+		}
     }
 }
 // List categories
-$statement = $pdo->prepare("SELECT * FROM categories");
+$categories = array();
+$statement = $mysqli->prepare("SELECT * FROM categories");
 $statement->execute();
-$categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+$result = $statement->get_result();
+while($assoc = $result->fetch_assoc()){
+	array_push($categories, $assoc);
+}
+
 $csrf = CSRF::csrfInputField();
 ?>
 <div class="container">
@@ -212,12 +254,12 @@ $csrf = CSRF::csrfInputField();
                             <?php foreach($items as $item): ?>
                                 <tr>
                                     <td><?= $item['title'] ?></td>
-                                    <td>$<?= number_format($item['price'], 2) ?></td>
+                                    <td><?= $config['currency_symbol'].number_format($item['price'], 2) ?></td>
                                     <td><?= $item['description'] ?></td>
                                     <td><?= $item['qty'] ?></td>
                                     <td><?= $item['category'] ?></td>
                                     <td class="text-end">
-                                        <form action="/admin/products?id=<?=  $items[0]['id'] ?>" method="post">
+                                        <form action="" method="post">
                                             <?= $csrf ?>
                                             <input type="text" name="id" value="<?= $item['id'] ?>" hidden>
                                             <a href="/admin/products?id=<?= $item['id']; ?>" class="btn btn-outline-info btn-rounded"><i class="fas fa-pen"></i></a>

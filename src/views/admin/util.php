@@ -10,7 +10,7 @@ require_once __DIR__.'/../bin/PHPMailer/SMTP.php';
 
 function sendEmail($emails, $title, $message, $html, $attachment, $image) {
 	require __DIR__ . '/../db.php';
-	$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+	$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
 	(empty($config['smtp_username']) || empty($config['smtp_password']))?$auth=false:$auth=true;
 		foreach($emails as $email) {
 			//Create an instance; passing `true` enables exceptions
@@ -51,7 +51,7 @@ function exportDB($compression, $db) {
 	//create/open files
     $tables = array();
     $result = $db->query("SHOW TABLES");
-    while($row = $result->fetch_row()) { 
+    while($row = $result->fetch_row()) {
         $tables[] = $row[0];
     }
 
@@ -68,15 +68,15 @@ function exportDB($compression, $db) {
 
         $return .= "\n\n".$row2[1].";\n\n";
 
-        for($i = 0; $i < $numColumns; $i++) { 
-            while($row = $result->fetch_row()) { 
+        for($i = 0; $i < $numColumns; $i++) {
+            while($row = $result->fetch_row()) {
                 $return .= "INSERT INTO $table VALUES(";
-                for($j=0; $j < $numColumns; $j++) { 
+                for($j=0; $j < $numColumns; $j++) {
                     $row[$j] = addslashes($row[$j]);
                     $row[$j] = $row[$j];
-                    if (isset($row[$j])) { 
+                    if (isset($row[$j])) {
                         $return .= '"'.$row[$j].'"' ;
-                    } else { 
+                    } else {
                         $return .= '""';
                     }
                     if ($j < ($numColumns-1)) {
@@ -92,7 +92,7 @@ function exportDB($compression, $db) {
 
 	if ($compression) {
 	$zp = gzopen($filename = $filename.'.sql.gz', "a9");
-	fwrite($zp, $return);
+	gzwrite($zp, $return);
 	gzclose($zp);
 	} else {
 	$handle = fopen($filename = $filename.'.sql','a+');
@@ -113,10 +113,8 @@ function exportDB($compression, $db) {
 }
 
 function importDB($tmp, $db) {
-	/*!clamdscan($_FILES['file']['tmp_name']) &&*/ 
-		$sql = file_get_contents($tmp);
-		$db->multi_query($sql);
-	
+	$sql = file_get_contents($tmp);
+	$db->multi_query($sql);
 }
 // debugging this function? some things to check
 // - writeable upload_tmp_dir
@@ -215,11 +213,13 @@ function compressImage($source, $destination, $quality, $height, $width, $bgcolo
 }
 // this needs work
 function cartcheck($item, $qty) {
-	require __DIR__ . '/../db.php';
-    $statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
-	$statement->execute(array($item));
-	if($statement->rowCount() > 0) {
-		$stock = $statement->fetchAll(PDO::FETCH_ASSOC);
+	require __DIR__ . '/../mysqli.php';
+    $statement = $mysqli->prepare("SELECT * FROM products WHERE id=?");
+	$statement->bind_param('i', $item);
+	$statement->execute();
+	$result = $statement->get_result();
+	if($statement->affected_rows > 0) {
+		$stock = $result->fetch_assoc();
 	} else {
 		return -1; // Product Error
 	}
