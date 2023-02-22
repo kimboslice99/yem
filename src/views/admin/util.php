@@ -109,7 +109,9 @@ function exportDB($compression, $db) {
     header('Content-Type: application/sql');
     ob_clean();
     flush();
-    die(readfile($filename) && unlink($filename));
+	readfile($filename);
+	unlink($filename);
+    die();
 }
 
 function importDB($tmp, $db) {
