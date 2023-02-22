@@ -30,7 +30,7 @@ E-commerce web application built using php routing. Instead of relying on the we
 
 ## Setup
 - Create database
-- Execute [db.sql](src/db.sql)
+- Execute [db.sql](src/views/bin/db.sql)
 - Ensure webserver has full access to folder (IIS_IUSRS)
 - Enter database config [config.ini](src/views/bin/config.ini.sample)
 - enable php extensions (imagick, curl, pdo_mysql, openssl)

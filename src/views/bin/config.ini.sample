@@ -1,9 +1,9 @@
 [database]
-db_host=127.0.0.1
-db_port=3306
-db_name=ecom_test
-db_user=root
-db_password=password
+db_host=""
+db_port=""
+db_name=""
+db_user=""
+db_password=""
 
 [braintree]
 bt_autoloader=""
@@ -15,7 +15,7 @@ private_key=""
 [session]
 session_name="Session"
 # Session2Db isnt required, but a nice thing to have anyways
-session2db_autoloader=
+session2db_autoloader=""
 
 [smtp]
 # mail from name
