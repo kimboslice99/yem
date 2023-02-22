@@ -223,8 +223,8 @@ function cartcheck($item, $qty) {
 	} else {
 		return -1; // Product Error
 	}
-	if($stock[0]['qty'] - $qty >= 0) {
-		return $stock[0]['qty'] - $qty;
+	if($stock['qty'] - $qty >= 0) {
+		return $stock['qty'] - $qty;
 	} else {
 		return -1;
 	}
