@@ -1,7 +1,7 @@
 <?php
 // Prevent direct loading of errorpage
 if($_SERVER['REQUEST_URI'] == '/error.php'){header('Location: /');}
-$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/config/config.ini');
 if(!$_GET['e']){
 	$e = 404;
 	}else{

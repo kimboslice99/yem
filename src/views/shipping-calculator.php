@@ -1,7 +1,7 @@
 <?php
 // Lets return JSON and parse it client side for a shipping calculator that doesnt require the traditional form submit
 if(isset($_POST['postal'])) {
-$config = parse_ini_file(__DIR__ . '/bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/../config/config.ini');
 if(empty($config['cp_username']) || empty($config['cp_password']) || empty($config['cp_mailedby'])){die();}
 $username = $config['cp_username']; 
 $password = $config['cp_password'];

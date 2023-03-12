@@ -170,7 +170,7 @@ if($statement->affected_rows > 0) {
 }
 
 // Reload config, show current values after update
-$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/../../config/config.ini');
 $csrf = CSRF::csrfInputField();
 ?>
 <div class="container">

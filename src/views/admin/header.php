@@ -5,7 +5,7 @@ ob_start();
 if(!isset($_SESSION['admin'])) {
     header('Location: /admin/login');
 }
-$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/../../config/config.ini');
 ?>
 <!DOCTYPE html>
 <html lang="en">

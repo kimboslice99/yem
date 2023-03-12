@@ -3,12 +3,19 @@
 error_reporting(E_ALL & ~E_NOTICE); //  quiet down log with & ~E_NOTICE
 ini_set('display_errors', 'Off');
 ini_set("log_errors", 1);
-ini_set("error_log", __DIR__ . "/views/bin/php-error.log");
+ini_set("error_log", __DIR__ . "/config/php-error.log");
 // ================== CHECK INI ===================== //
-if(!file_exists(__DIR__ . '/views/bin/config.ini')){
+if(!file_exists(__DIR__ . '/config/config.ini')){
 	die('Please rename config.ini.sample to config.ini and fill in your config details');
 } else {
-	$config = parse_ini_file(__DIR__ . '/views/bin/config.ini');
+	$config = parse_ini_file(__DIR__ . '/config/config.ini');
+}
+// ============= CHECK IF CONFIG DIR WRITEABLE ============= //
+if(!$f = @fopen(__DIR__.'/config/writeable.tmp', 'w')){
+	die('config directory not writable!');
+} else {
+	fclose($f);
+	unlink(__DIR__.'/config/writeable.tmp');
 }
 // ============ CHECK FOR REQUIRED EXTENSIONS ========== //
 (!extension_loaded('curl'))?die('curl missing!'):''; // Shipping calc
@@ -16,7 +23,7 @@ if(!file_exists(__DIR__ . '/views/bin/config.ini')){
 (!extension_loaded('openssl'))?die('openssl missing!'):''; // csrf tokens
 (!extension_loaded('zlib'))?die('zlib missing!'):''; // gzopen() gzwrite() gzclose()
 (!extension_loaded('session'))?die('session missing!'):''; // duh
-(!extension_loaded('mysqli'))?die('mysqli missing!'):''; // cuurently only import + export DB... also Session2DB if enabled
+(!extension_loaded('mysqli'))?die('mysqli missing!'):''; // aLL db operations
 (!extension_loaded('bcmath'))?die('bcmath missing!'):''; // math calculations fo taxes
 (!extension_loaded('filter'))?die('filter missing!'):''; // filter inputs
 // =============== SECURING COOKIES  - most of these get set by Session2DB if youre using that but in case you arent =============== // 
@@ -31,7 +38,7 @@ ini_set('session.sid_bits_per_character', '6'); // specify the number of bits in
 ini_set('session.sid_length', '96'); // Session ID length can be between 22 to 256. Longer session ID is harder to guess
 ini_set('session.cookie_samesite', 'Strict'); //  provides some protection against cross-site request forgery attacks
 ini_set('session.gc_maxlifetime', '3650'); // 3600 = 1 hour
-ini_set('session.save_path', __DIR__ . '/views/bin'); // know where your sessions are stored!
+ini_set('session.save_path', __DIR__ . '/config'); // know where your sessions are stored!
 // 
 session_name($config['session_name']);
 date_default_timezone_set($config['timezone']);
@@ -120,10 +127,6 @@ Route::add('/forgot-password', function() {
 
 Route::add('/reset', function() {
     require __DIR__ . '/views/reset.php';
-});
-
-Route::add('/400', function() {
-    require __DIR__ . '/views/400.php';
 });
 
 Route::add('/sitemap', function() {

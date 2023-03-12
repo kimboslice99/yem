@@ -10,7 +10,7 @@ require_once __DIR__.'/../bin/PHPMailer/SMTP.php';
 
 function sendEmail($emails, $title, $message, $html, $attachment, $image) {
 	require __DIR__ . '/../db.php';
-	$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
+	$config = parse_ini_file(__DIR__ . '/../../config/config.ini');
 	(empty($config['smtp_username']) || empty($config['smtp_password']))?$auth=false:$auth=true;
 		foreach($emails as $email) {
 			//Create an instance; passing `true` enables exceptions
@@ -240,7 +240,7 @@ function tax($num, $rate) {
 
 // Homegrown ini config function, retains comments, unlike some solutions
 function config($key, $value){
-	$path = __DIR__.'/../bin/config.ini';
+	$path = __DIR__.'/../../config/config.ini';
 	$f = file($path);
 	$h = fopen($path, 'w');
 	foreach($f as $line){
@@ -253,7 +253,7 @@ function config($key, $value){
 }
 // Function requires clamd service running and config details entered
 function clamdscan($filepath){
-	$config = parse_ini_file(__DIR__ . '/../bin/config.ini');
+	$config = parse_ini_file(__DIR__ . '/../../config/config.ini');
 	// if path empty return as you would if clean
 	if(empty($config['clam_path'])){return false;}
 	exec('"'.$config['clam_path'].'" -c "'.$config['clam_config_path'].'" --fdpass --stream "'.$filepath.'"', $null, $var);

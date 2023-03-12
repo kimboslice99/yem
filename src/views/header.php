@@ -1,6 +1,6 @@
 <?php
 ob_start();
-$config = parse_ini_file(__DIR__ . '/bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/../config/config.ini');
 require __DIR__ . '/admin/util.php';
 
 header("Content-Security-Policy: default-src 'none';connect-src 'self';script-src-elem 'self' https://code.jquery.com/jquery-3.6.3.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js;style-src-elem 'self' https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.compat.css https://assets.braintreegateway.com/web/dropin/1.34.0/css/dropin.min.css https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css https://fonts.googleapis.com/;style-src 'self';font-src 'self' https://fonts.gstatic.com/;img-src 'self' data:; report-uri /csp/report;");

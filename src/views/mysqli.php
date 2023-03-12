@@ -1,6 +1,6 @@
 <?php
 
-$config = parse_ini_file(__DIR__ . '/bin/config.ini');
+$config = parse_ini_file(__DIR__ . '/../config/config.ini');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 try {
 	$mysqli = new mysqli($config['db_host'], $config['db_user'], $config['db_password'], $config['db_name'], $config['db_port']);
