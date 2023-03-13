@@ -1,4 +1,4 @@
 
 src/config/config.ini
 src/config/config.ini.sample
-src/config/sess_*
+src/sessions/sess_*

@@ -11,11 +11,26 @@ if(!file_exists(__DIR__ . '/config/config.ini')){
 	$config = parse_ini_file(__DIR__ . '/config/config.ini');
 }
 // ============= CHECK IF CONFIG DIR WRITEABLE ============= //
+// Note: you may be temped to use is_writable instead, but this is bugged on windows
 if(!$f = @fopen(__DIR__.'/config/writeable.tmp', 'w')){
 	die('config directory not writable!');
 } else {
 	fclose($f);
 	unlink(__DIR__.'/config/writeable.tmp');
+}
+// ========== CHECK IF UPLOADS FOLDER IS WRITABLE =========== //
+if(!$f = @fopen(__DIR__.'/uploads/writeable.tmp', 'w')){
+	die('uploads directory not writable!');
+} else {
+	fclose($f);
+	unlink(__DIR__.'/uploads/writeable.tmp');
+}
+// ========== CHECK IF SESSIONS FOLDER IS WRITABLE =========== //
+if(!$f = @fopen(__DIR__.'/sessions/writeable.tmp', 'w')){
+	die('sessions directory not writable!');
+} else {
+	fclose($f);
+	unlink(__DIR__.'/sessions/writeable.tmp');
 }
 // ============ CHECK FOR REQUIRED EXTENSIONS ========== //
 (!extension_loaded('curl'))?die('curl missing!'):''; // Shipping calc
@@ -24,7 +39,7 @@ if(!$f = @fopen(__DIR__.'/config/writeable.tmp', 'w')){
 (!extension_loaded('zlib'))?die('zlib missing!'):''; // gzopen() gzwrite() gzclose()
 (!extension_loaded('session'))?die('session missing!'):''; // duh
 (!extension_loaded('mysqli'))?die('mysqli missing!'):''; // aLL db operations
-(!extension_loaded('bcmath'))?die('bcmath missing!'):''; // math calculations fo taxes
+(!extension_loaded('bcmath'))?die('bcmath missing!'):''; // math calculations for taxes
 (!extension_loaded('filter'))?die('filter missing!'):''; // filter inputs
 // =============== SECURING COOKIES  - most of these get set by Session2DB if youre using that but in case you arent =============== // 
 ini_set('session.cookie_httponly', '1'); // Prevent javascript access
@@ -38,7 +53,7 @@ ini_set('session.sid_bits_per_character', '6'); // specify the number of bits in
 ini_set('session.sid_length', '96'); // Session ID length can be between 22 to 256. Longer session ID is harder to guess
 ini_set('session.cookie_samesite', 'Strict'); //  provides some protection against cross-site request forgery attacks
 ini_set('session.gc_maxlifetime', '3650'); // 3600 = 1 hour
-ini_set('session.save_path', __DIR__ . '/config'); // know where your sessions are stored!
+ini_set('session.save_path', __DIR__ . '/sessions'); // know where your sessions are stored!
 // 
 session_name($config['session_name']);
 date_default_timezone_set($config['timezone']);
