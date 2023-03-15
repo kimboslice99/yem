@@ -3,5 +3,6 @@ src/config/config.ini
 src/config/php-error.log
 src/sessions/sess_*
 .vscode/settings.json
-src/uploads
+src/uploads/*
 src/views/bin/bt
+!src/uploads/.gitkeep
