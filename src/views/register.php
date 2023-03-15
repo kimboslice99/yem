@@ -1,10 +1,9 @@
 <?php 
-
+ini_set('display_errors', 1);
 require __DIR__ . '/../csrf.php';
 require __DIR__ . '/mysqli.php';
 require __DIR__ . '/admin/util.php';
 require __DIR__ . '/abuseipdb.php';
-
 
 if(isset($_SESSION['name'])) {
     header('Location: /');
@@ -90,6 +89,11 @@ if(isset($_POST['register']) && CSRF::validateToken(filter_input(INPUT_POST, 'to
 <section>
     <div>
         <div class="div-center">
+        <div class="">
+            <div class="block text-center">
+            <a href="/">
+					<img class="logo-h" src="/images/logo.jpg" alt="Logo">
+            </a>
         <?php if($error): ?>
             <div>
                 <div>
@@ -99,11 +103,6 @@ if(isset($_POST['register']) && CSRF::validateToken(filter_input(INPUT_POST, 'to
                 </div>		
             </div>
         <?php endif ?>
-        <div class="">
-            <div class="block text-center">
-            <a href="/">
-					<img class="logo-h" src="/images/logo.jpg" alt="Logo">
-            </a>
             <form class="text-left clearfix requires-validation" method="post" action="<?= $_SERVER['REQUEST_URI'] ?>" novalidate>
                 <?= CSRF::csrfInputField() ?>
                 <div class="form-group p-2">

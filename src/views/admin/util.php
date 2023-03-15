@@ -9,7 +9,6 @@ require_once __DIR__.'/../bin/PHPMailer/PHPMailer.php';
 require_once __DIR__.'/../bin/PHPMailer/SMTP.php';
 
 function sendEmail($emails, $title, $message, $html, $attachment, $image) {
-	require __DIR__ . '/../db.php';
 	$config = parse_ini_file(__DIR__ . '/../../config/config.ini');
 	(empty($config['smtp_username']) || empty($config['smtp_password']))?$auth=false:$auth=true;
 		foreach($emails as $email) {

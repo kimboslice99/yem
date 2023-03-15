@@ -1,9 +1,8 @@
 <?php
-
 ob_start();
 require __DIR__ . '/../csrf.php';
 require __DIR__ . '/abuseipdb.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/mysqli.php';
 require __DIR__ . '/invoice.php';
 require __DIR__ . '/admin/util.php';
 // ======== CHECK THAT WE HAVE FILLED IN BT DETAILS ======== //
@@ -29,12 +28,7 @@ $gateway = new Braintree\Gateway([
 // =================== CALCULATE TOTAL =================== //
 $total = 0;
 foreach($_SESSION['cart'] as $item) {
-	$statement = $pdo->prepare("SELECT * FROM products WHERE id=?");
-	$statement->execute(array($item['id']));
-	if($statement->rowCount() > 0) {
-		$db = $statement->fetchAll(PDO::FETCH_ASSOC);
-		$total += $db[0]['price'] * $item['quantity'];
-	}
+	$total += $item['price'] * $item['quantity'];
 }
 // ============= IF CART EMPTY ========== //
 if($total == 0 && empty($_SESSION['method']) || empty($_SESSION['shipping'])) { header('Location: /'); }
@@ -44,85 +38,89 @@ if(empty($config['tax'])){
 }else{
 	$tax = $config['tax'];
 }
+$taxed = 0;
 foreach(explode(',', $tax) as $rate) {
 	$taxed += tax($total, $rate);
 }
 $total = bcadd($total, $taxed, 2);
 // ============== IF SUBMIT ================== //
-if(isset($_POST['payment_method_nonce']) && CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW)) && !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)){
-// ============= CREATE SALE ============== //
-$result = $gateway->transaction()->sale([
-  'amount' => bcadd($total, filter_var($_SESSION['shipping']), 2),
-  'paymentMethodNonce' => filter_input( INPUT_POST, 'payment_method_nonce' ),
-  'deviceData' => $_POST['data'],
-  'customer' => [
-        'id' => filter_var($_SESSION['id']),
-        'firstName' => filter_var($_SESSION['firstname']),
-        'lastName' => filter_var($_SESSION['lastname']),
-        'email' => filter_var($_SESSION['email']),
-        'phone' => filter_var($_SESSION['phone'])
-    ], 
-  'options' => [
-    'submitForSettlement' => True
-  ]
-]);
-$transaction = $result->transaction;
-// =============== VALID SUCCESS STATUSES? ================ //
-$transactionSuccessStatuses = [
-    Braintree\Transaction::AUTHORIZED,
-    Braintree\Transaction::AUTHORIZING,
-    Braintree\Transaction::SETTLED,
-    Braintree\Transaction::SETTLING,
-    Braintree\Transaction::SETTLEMENT_CONFIRMED,
-    Braintree\Transaction::SETTLEMENT_PENDING,
-    Braintree\Transaction::SUBMITTED_FOR_SETTLEMENT
-];
-// =================== CATCH ERRORS ============== //
-if (!$result->success) {
+if(isset($_POST['payment_method_nonce'])
+	&& CSRF::validateToken(filter_input(INPUT_POST, 'token', FILTER_UNSAFE_RAW))
+	&& !AbuseIPDB::Listed($_SERVER['REMOTE_ADDR'], 50)){
+	// ============= CREATE SALE ============== //
+	$result = $gateway->transaction()->sale([
+	'amount' => bcadd($total, filter_var($_SESSION['shipping']), 2),
+	'paymentMethodNonce' => filter_input( INPUT_POST, 'payment_method_nonce' ),
+	'deviceData' => $_POST['data'],
+	'customer' => [
+			'id' => filter_var($_SESSION['id']),
+			'firstName' => filter_var($_SESSION['firstname']),
+			'lastName' => filter_var($_SESSION['lastname']),
+			'email' => filter_var($_SESSION['email']),
+			'phone' => filter_var($_SESSION['phone'])
+		], 
+	'options' => [
+		'submitForSettlement' => True
+	]
+	]);
+	$transaction = $result->transaction;
+	// =============== VALID SUCCESS STATUSES? ================ //
+	$transactionSuccessStatuses = [
+		Braintree\Transaction::AUTHORIZED,
+		Braintree\Transaction::AUTHORIZING,
+		Braintree\Transaction::SETTLED,
+		Braintree\Transaction::SETTLING,
+		Braintree\Transaction::SETTLEMENT_CONFIRMED,
+		Braintree\Transaction::SETTLEMENT_PENDING,
+		Braintree\Transaction::SUBMITTED_FOR_SETTLEMENT
+	];
+	// =================== CATCH ERRORS ============== //
+	if (!$result->success) {
 
-trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
+	trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
 
-die(json_encode(array(
-	'status' => $transaction->status,
-	// "processor_declined"
-	'processorResponseType' => $transaction->processorResponseType,
-	// "soft_declined"
-	'processorResponseCode' => $transaction->processorResponseCode,
-	// "2000"
-	'processorResponseText' => $transaction->processorResponseText))); }
-
-
-if (!$result->transaction) {
-	
-trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
-	
-die(json_encode(array(
-	'status' => $transaction->status,
-	// "processor_declined"
-	'processorResponseType' => $transaction->processorResponseType,
-	// "soft_declined"
-	'processorResponseCode' => $transaction->processorResponseCode,
-	// "2000"
-	'processorResponseText' => $transaction->processorResponseText))); }
-
-
-if (!in_array($transaction->status, $transactionSuccessStatuses)) {
-	$errorString = "";
-	foreach($result->errors->deepAll() as $error) {
-		$errorString .= 'Error: ' . $error->code . ": " . $error->message . "\n";
-	}
-	trigger_error( $errorString . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
 	die(json_encode(array(
-		'status' => 'Payment error',
-		
+		'status' => $transaction->status,
+		// "processor_declined"
 		'processorResponseType' => $transaction->processorResponseType,
 		// "soft_declined"
 		'processorResponseCode' => $transaction->processorResponseCode,
 		// "2000"
-		'processorResponseText' => $transaction->processorResponseText))) ; }
+		'processorResponseText' => $transaction->processorResponseText))); }
 
-if ($result->success && $result->transaction) {
-    $transaction = $result->transaction;
+
+	if (!$result->transaction) {
+			
+		trigger_error( $transaction->status . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
+			
+		die(json_encode(array(
+			'status' => $transaction->status,
+			// "processor_declined"
+			'processorResponseType' => $transaction->processorResponseType,
+			// "soft_declined"
+			'processorResponseCode' => $transaction->processorResponseCode,
+			// "2000"
+			'processorResponseText' => $transaction->processorResponseText)));
+	}
+
+
+	if (!in_array($transaction->status, $transactionSuccessStatuses)) {
+		$errorString = "";
+		foreach($result->errors->deepAll() as $error) {
+			$errorString .= 'Error: ' . $error->code . ": " . $error->message . "\n";
+		}
+		trigger_error( $errorString . ' ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR']);
+		die(json_encode(array(
+			'status' => 'Payment error',
+			
+			'processorResponseType' => $transaction->processorResponseType,
+			// "soft_declined"
+			'processorResponseCode' => $transaction->processorResponseCode,
+			// "2000"
+			'processorResponseText' => $transaction->processorResponseText))) ; }
+
+	if ($result->success && $result->transaction) {
+		$transaction = $result->transaction;
 		$paymentdetails = array();
 		$id = $transaction->id;
 		$amount = $transaction->amount;
@@ -150,8 +148,9 @@ if ($result->success && $result->transaction) {
 		$details = serialize($_SESSION['cart']);
 		$timestamp = gmdate('Y-m-d h:i:s');
 		$readable = 'Pending';
-		$statement = $pdo->prepare("INSERT INTO transactions (name, email, address, details, timestamp, payment_status, payment_amount, payment_id, readable_orderstatus, payment_details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-		$statement->execute(array(filter_var($_SESSION['name']), filter_var($_SESSION['email']), filter_var($_SESSION['address']), $details, $timestamp, $status, $amount, $id, $readable, $serialize));
+		$statement = $mysqli->prepare("INSERT INTO transactions (name, email, address, details, timestamp, payment_status, payment_amount, payment_id, readable_orderstatus, payment_details) VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)");
+		$statement->bind_param("sssssssss", filter_var($_SESSION['name']), filter_var($_SESSION['email']), filter_var($_SESSION['address']), $details, $status, $amount, $id, $readable, $serialize);
+		$statement->execute();
 		$message = generateInvoice($timestamp);
 		$image['name'] = 'logo.jpg';
 		$image['path'] = __DIR__ . '/images/logo.jpg';
@@ -160,8 +159,9 @@ if ($result->success && $result->transaction) {
 		file_put_contents(__DIR__ . '/bin/payment_error.log', date('Y-m-d H:i:s') . ' Payment '. $transaction->status . '! ' . $_SESSION['name'] . '@' . $_SERVER['REMOTE_ADDR'] ."\n", FILE_APPEND|LOCK_EX);
 		foreach($_SESSION['cart'] as $item){
 			//==================== UPDATE STOCK =================== //
-			$statement = $pdo->prepare("UPDATE products SET qty=(SELECT qty - (?) FROM products WHERE id=?) WHERE id=?");
-			$statement->execute(array($item['quantity'], $item['id'], $item['id']));
+			$statement = $mysqli->prepare("UPDATE products SET qty=(SELECT qty - (?) FROM products WHERE id=?) WHERE id=?");
+			$statement->bind_param("iii", $item['quantity'], $item['id'], $item['id']);
+			$statement->execute();
 		}
 		// === CLEAR CART AFTER === //
 		unset($_SESSION['cart']);
@@ -181,8 +181,7 @@ if ($result->success && $result->transaction) {
 		// "Do Not Honor"
 		echo json_encode($array);
 		die();
-		
-}
+	}
 }
 // === nonce for csp - is this enough? === //
 $nonce = bin2hex(openssl_random_pseudo_bytes(128));

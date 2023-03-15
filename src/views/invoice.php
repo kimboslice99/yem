@@ -1,7 +1,7 @@
 <?php
 
 function generateInvoice($date){
-	$config = parse_ini_file(__DIR__ . '/config/config.ini');
+	$config = parse_ini_file(__DIR__ . '/../config/config.ini');
 	if (empty($config['tax'])){
 		$config['tax'] = 0;
 	}

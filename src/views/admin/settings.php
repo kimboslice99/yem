@@ -307,7 +307,7 @@ $csrf = CSRF::csrfInputField();
                                 </div>
                             </div>
                             <div class="mb-3">
-								<label class="form-label font-10">ClamAV config path - sample in bin</label>
+								<label class="form-label font-10">ClamAV config path</label>
                                 <div class="input-group mb-3">
                                     <input type="text" name="clam_config_path" class="form-control" placeholder="/config/path" value="<?= $config['clam_config_path'] ?>">
                                 </div>

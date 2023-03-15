@@ -1,4 +1,7 @@
 
 src/config/config.ini
+src/config/php-error.log
 src/sessions/sess_*
-src/.vscode
+.vscode/settings.json
+src/uploads
+src/views/bin/bt
